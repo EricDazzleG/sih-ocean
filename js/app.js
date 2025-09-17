@@ -232,16 +232,22 @@ function loadFooter() {
 
 // Load SOS Button
 function loadSOSButton() {
+    // If this page doesn't have the SOS container, skip
+    if (!sosButtonContainer) return;
+
     sosButtonContainer.innerHTML = `
         <button id="sos-button" class="sos-button">
             <span>SOS</span>
         </button>
     `;
     
-    // SOS Button Click Event
-    document.getElementById('sos-button').addEventListener('click', () => {
-        alert('Emergency SOS feature will be implemented in the next version.');
-    });
+    // Add click handler if the button exists
+    const btn = document.getElementById('sos-button');
+    if (btn) {
+        btn.addEventListener('click', () => {
+            alert('Emergency SOS feature will be implemented in the next version.');
+        });
+    }
 }
 
 // Load Emergency Notifications
