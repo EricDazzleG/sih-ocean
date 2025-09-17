@@ -307,6 +307,11 @@ async function checkAuthStatus() {
     } else {
         // User is not authenticated
         if (!isPublicPage) {
+            // Save intended destination, e.g., report.html
+            try {
+                const intended = window.location.pathname.split('/').pop() || 'index.html';
+                localStorage.setItem('post_login_redirect', intended);
+            } catch {}
             // Redirect to login if trying to access protected page
             window.location.href = 'login.html';
             return;

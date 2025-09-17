@@ -9,14 +9,30 @@ const detectLocationBtn = document.getElementById('detect-location');
 const locationInput = document.getElementById('location');
 const statusMessage = document.getElementById('status-message');
 
+// Helper: redirect after login (uses stored intended path if any)
+function redirectAfterLogin() {
+    try {
+        const intended = localStorage.getItem('post_login_redirect');
+        if (intended) {
+            localStorage.removeItem('post_login_redirect');
+            window.location.href = intended;
+            return;
+        }
+    } catch {}
+    window.location.href = 'index.html';
+}
+
 // Initialize Login Page
 document.addEventListener('DOMContentLoaded', async () => {
     // Check for existing session
     try {
         const session = await getSession();
         if (session) {
-            // If user is already logged in, redirect to home
-            window.location.href = 'index.html';
+            // If user is already logged in, go to intended page or home
+            if (window.parent && typeof window.parent.loadHeader === 'function') {
+                window.parent.loadHeader();
+            }
+            redirectAfterLogin();
             return;
         }
     } catch (error) {
@@ -75,10 +91,15 @@ async function handleLogin(event) {
         // Login successful
         showStatusMessage('Login successful! Redirecting...', 'success');
         
-        // Redirect to home page
+        // Refresh header so hamburger menu shows Logout
+        if (window.parent && typeof window.parent.loadHeader === 'function') {
+            window.parent.loadHeader();
+        }
+        
+        // Redirect to intended page or home
         setTimeout(() => {
-            window.location.href = 'index.html';
-        }, 1000);
+            redirectAfterLogin();
+        }, 600);
         
     } catch (error) {
         console.error('Login error:', error);
