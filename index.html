@@ -59,37 +59,8 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bcryptjs/2.4.3/bcrypt.min.js"></script>
     
-    <!-- Initialize Supabase -->
-    <script>
-        // Initialize Supabase client globally
-        window.supabase = supabase.createClient(
-            'https://uxculnxvfukuiczadoqz.supabase.co',
-            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV4Y3Vsbnh2ZnVrdWljemFkb3F6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxMTc3OTEsImV4cCI6MjA3MzY5Mzc5MX0.YebX841KOKE2PP_DChIV70vHr3H4xTdHqxbDOx9C89M'
-        );
-    </script>
-    
     <!-- App Scripts -->
     <script type="module" src="./js/app.js"></script>
     <script type="module" src="./js/home.js"></script>
-    
-    <!-- Error Handling -->
-    <script>
-        window.addEventListener('error', (event) => {
-            console.error('Script error:', event);
-            // Only show error if not already shown
-            if (!document.getElementById('global-error-message')) {
-                const errorContainer = document.createElement('div');
-                errorContainer.id = 'global-error-message';
-                errorContainer.style.cssText = 'position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #fef2f2; color: #dc2626; padding: 1rem; border-radius: 0.5rem; z-index: 1000; max-width: 90%; text-align: center;';
-                errorContainer.textContent = 'Error loading application. Please check console for details.';
-                document.body.appendChild(errorContainer);
-                
-                // Auto-remove after 10 seconds
-                setTimeout(() => {
-                    errorContainer.remove();
-                }, 10000);
-            }
-        });
-    </script>
 </body>
 </html>

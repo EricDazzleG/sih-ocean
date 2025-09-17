@@ -1,7 +1,11 @@
 // Main Application JavaScript
 
-// Use the global Supabase client initialized in index.html
-export const supabase = window.supabase;
+// Supabase Configuration
+const SUPABASE_URL = 'https://uxculnxvfukuiczadoqz.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV4Y3Vsbnh2ZnVrdWljemFkb3F6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxMTc3OTEsImV4cCI6MjA3MzY5Mzc5MX0.YebX841KOKE2PP_DChIV70vHr3H4xTdHqxbDOx9C89M';
+
+// Initialize Supabase Client
+export const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // Session management
 export function setSession(session) {
