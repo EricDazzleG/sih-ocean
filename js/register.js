@@ -1,9 +1,32 @@
 // Register Page JavaScript
 
-import { supabase } from './app.js';
+// Import Supabase from CDN (fallback if module import fails)
+let supabase;
 
-// Debug: Log Supabase initialization
+// Debug: Log script loading
 console.log('Register script loaded');
+
+// Try to get Supabase from window object first
+if (window.supabase) {
+    supabase = window.supabase;
+    console.log('Using window.supabase');
+} 
+// If not in window, try to import from app.js
+else {
+    try {
+        import('./app.js').then(module => {
+            if (module.supabase) {
+                supabase = module.supabase;
+                console.log('Using imported supabase from app.js');
+            }
+        }).catch(err => {
+            console.error('Failed to import app.js:', err);
+        });
+    } catch (err) {
+        console.error('Error importing app.js:', err);
+    }
+}
+
 console.log('Supabase instance:', supabase);
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -55,13 +78,29 @@ async function detectUserLocation() {
     }
 }
 
+// Show error message helper
+function showError(message) {
+    const statusEl = document.getElementById('status-message');
+    if (statusEl) {
+        statusEl.textContent = message;
+        statusEl.className = 'error';
+        statusEl.style.display = 'block';
+    }
+    console.error(message);
+}
+
 // Handle registration form submission
 async function handleRegister(event) {
     event.preventDefault();
     
+    // Check if Supabase is initialized
+    if (!supabase) {
+        showError('Error: Supabase client not initialized. Please refresh the page and try again.');
+        return;
+    }
+    
     const form = event.target;
     const formData = new FormData(form);
-    const statusMessage = document.getElementById('status-message');
     
     console.log('Form submitted');
     

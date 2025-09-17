@@ -5,7 +5,22 @@ const SUPABASE_URL = 'https://uxculnxvfukuiczadoqz.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV4Y3Vsbnh2ZnVrdWljemFkb3F6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxMTc3OTEsImV4cCI6MjA3MzY5Mzc5MX0.YebX841KOKE2PP_DChIV70vHr3H4xTdHqxbDOx9C89M';
 
 // Initialize Supabase Client
-export const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let supabase;
+
+try {
+    // Initialize Supabase client
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    
+    // Make it available globally for debugging
+    window.supabaseClient = supabase;
+    
+    console.log('Supabase client initialized successfully');
+} catch (error) {
+    console.error('Failed to initialize Supabase client:', error);
+    throw error; // Re-throw to prevent the app from running without Supabase
+}
+
+export { supabase };
 
 // Session management
 export function setSession(session) {
