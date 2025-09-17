@@ -57,13 +57,13 @@ async function handleLogin(event) {
     const form = event.target;
     const formData = new FormData(form);
     
-    // Get form values
-    const email = formData.get('email');
+    // Get form values (phone + password)
+    const phone = formData.get('phone');
     const password = formData.get('password');
     
     // Validate form
-    if (!email || !password) {
-        showStatusMessage('Please enter both email and password', 'error');
+    if (!phone || !password) {
+        showStatusMessage('Please enter both phone and password', 'error');
         return;
     }
     
@@ -74,15 +74,18 @@ async function handleLogin(event) {
     submitBtn.innerHTML = 'Logging in...';
     
     try {
+        // Derive synthetic email from phone for Supabase Auth
+        const email = `${phone}@incois.user`;
+
         // Attempt to sign in
         const { user, error } = await signIn(email, password);
         
         if (error) {
             // Handle specific error cases
             if (error.message.includes('Invalid login credentials')) {
-                throw new Error('Invalid email or password');
+                throw new Error('Invalid phone or password');
             } else if (error.message.includes('Email not confirmed')) {
-                throw new Error('Please check your email to confirm your account before logging in');
+                throw new Error('Please verify your account before logging in');
             } else {
                 throw error;
             }

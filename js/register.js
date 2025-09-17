@@ -54,7 +54,6 @@ async function handleRegister(event) {
     
     // Get form values
     const name = formData.get('name');
-    const email = formData.get('email');
     const phone = formData.get('phone');
     const password = formData.get('password');
     const confirmPassword = formData.get('confirm-password');
@@ -62,6 +61,11 @@ async function handleRegister(event) {
     const userType = formData.get('user-type');
     
     // Validate form
+    if (!phone) {
+        showStatusMessage('Phone number is required', 'error');
+        return;
+    }
+
     if (password !== confirmPassword) {
         showStatusMessage('Passwords do not match', 'error');
         return;
@@ -79,6 +83,10 @@ async function handleRegister(event) {
     submitBtn.innerHTML = 'Creating Account...';
     
     try {
+        // Use a synthetic email from phone for Supabase Auth
+        // This avoids SMS provider setup while keeping phone-first UX
+        const email = `${phone}@incois.user`;
+
         // Create user with Supabase Auth
         const userData = {
             name,
@@ -92,21 +100,13 @@ async function handleRegister(event) {
         if (error) throw error;
         
         // Show success message
-        const successMessage = 'Registration successful! ' + 
-            (user.confirmed_at ? 'You are now logged in.' : 'Please check your email to confirm your account.');
-            
+        const successMessage = 'Registration successful! Redirecting...';
         showStatusMessage(successMessage, 'success');
         
-        // Redirect based on email confirmation status
-        if (user.confirmed_at) {
-            // If email is already confirmed, redirect to home
-            window.location.href = 'index.html';
-        } else {
-            // Otherwise, redirect to login after a delay
-            setTimeout(() => {
-                window.location.href = 'login.html';
-            }, 3000);
-        }
+        // Redirect after a short delay
+        setTimeout(() => {
+            window.location.href = 'login.html';
+        }, 1000);
         
     } catch (error) {
         console.error('Registration error:', error);
@@ -114,9 +114,8 @@ async function handleRegister(event) {
         // More specific error messages
         let errorMessage = 'An error occurred during registration';
         
-        if (error.message?.includes('already registered') || 
-            error.message?.includes('already in use')) {
-            errorMessage = 'This email is already registered. Please log in instead.';
+        if (error.message?.includes('already')) {
+            errorMessage = 'This phone is already registered. Please log in instead.';
         } else if (error.message?.includes('password')) {
             errorMessage = 'Password must be at least 6 characters long';
         } else if (error.message) {
