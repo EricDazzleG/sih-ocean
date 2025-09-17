@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - INCOIS</title>
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Custom Tailwind Configuration -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0B5677',
+                        accent: '#2AB7B7',
+                        danger: '#FF3B30',
+                        warn: '#FF8C00',
+                        sand: '#F5E9D6',
+                        gold: '#C49A42',
+                        text: '#0F172A',
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="./css/styles.css">
+</head>
+<body class="bg-white min-h-screen flex flex-col">
+    <!-- Header Component -->
+    <header id="header-container"></header>
+
+    <!-- Emergency Notification Bar -->
+    <div id="emergency-notification" class="bg-warn text-white p-3 text-center"></div>
+
+    <!-- Main Content -->
+    <main class="flex-grow container mx-auto p-4">
+        <div class="bg-white rounded-lg shadow-md p-6 max-w-lg mx-auto">
+            <div class="flex flex-col items-center mb-6">
+                <div id="profile-image" class="w-24 h-24 rounded-full bg-primary mb-4 flex items-center justify-center text-white text-2xl font-bold">
+                    <!-- Default placeholder, will be replaced with user image or initials -->
+                    <span>?</span>
+                </div>
+                <h1 id="profile-name" class="text-2xl font-bold text-primary">Loading...</h1>
+                <p id="profile-location" class="text-gray-600">Location: Loading...</p>
+            </div>
+            
+            <div class="border-t border-gray-200 pt-4">
+                <div class="mb-4">
+                    <h2 class="text-lg font-semibold text-primary mb-2">Contact Information</h2>
+                    <p id="profile-phone" class="text-gray-700">Phone: Loading...</p>
+                </div>
+                
+                <div class="mb-4">
+                    <h2 class="text-lg font-semibold text-primary mb-2">Statistics</h2>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-gray-100 p-3 rounded-lg text-center">
+                            <p class="text-sm text-gray-600">Reports Submitted</p>
+                            <p id="reports-count" class="text-xl font-bold text-primary">0</p>
+                        </div>
+                        <div class="bg-gray-100 p-3 rounded-lg text-center">
+                            <p class="text-sm text-gray-600">Alerts Received</p>
+                            <p id="alerts-count" class="text-xl font-bold text-primary">0</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-6">
+                <button id="logout-button" class="w-full bg-primary hover:bg-opacity-90 text-white font-bold py-2 px-4 rounded transition duration-300">
+                    Logout
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- SOS Button -->
+    <div id="sos-button-container"></div>
+
+    <!-- Footer Component -->
+    <footer id="footer-container"></footer>
+
+    <!-- Supabase JS Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- App Scripts -->
+    <script type="module" src="./js/app.js"></script>
+    <script type="module" src="./js/profile.js"></script>
+</body>
+</html>

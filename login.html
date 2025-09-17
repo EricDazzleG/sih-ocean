@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - INCOIS</title>
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Custom Tailwind Configuration -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0B5677',
+                        accent: '#2AB7B7',
+                        danger: '#FF3B30',
+                        warn: '#FF8C00',
+                        sand: '#F5E9D6',
+                        gold: '#C49A42',
+                        text: '#0F172A',
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="./css/styles.css">
+</head>
+<body class="bg-white min-h-screen flex flex-col">
+    <!-- Header Component -->
+    <header id="header-container"></header>
+
+    <!-- Emergency Notification Bar -->
+    <div id="emergency-notification" class="bg-warn text-white p-3 text-center"></div>
+
+    <!-- Main Content -->
+    <main class="flex-grow container mx-auto p-4 flex items-center justify-center">
+        <div class="bg-white rounded-lg shadow-md p-6 w-full max-w-md">
+            <div class="text-center mb-6">
+                <h1 class="text-2xl font-bold text-primary">Login / Register</h1>
+                <p class="text-gray-600 mt-1">Access your INCOIS account</p>
+            </div>
+            
+            <form id="login-form" class="space-y-4">
+                <!-- Name Input -->
+                <div>
+                    <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                    <input type="text" id="name" name="name" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Enter your full name" required>
+                </div>
+                
+                <!-- Phone Input -->
+                <div>
+                    <label for="phone" class="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                    <input type="tel" id="phone" name="phone" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Enter your phone number" required>
+                </div>
+                
+                <!-- Location Input -->
+                <div>
+                    <label for="location" class="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                    <div class="flex space-x-2">
+                        <input type="text" id="location" name="location" class="flex-grow px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Enter your location" required>
+                        <button type="button" id="detect-location" class="bg-accent hover:bg-opacity-90 text-white px-3 py-2 rounded-md text-sm font-medium transition duration-300">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Login Button -->
+                <div>
+                    <button type="submit" class="w-full bg-primary hover:bg-opacity-90 text-white font-bold py-3 px-4 rounded-md transition duration-300">
+                        Login / Register
+                    </button>
+                </div>
+            </form>
+            
+            <!-- Status Message -->
+            <div id="status-message" class="mt-4 p-3 rounded-md hidden"></div>
+            
+            <div class="mt-6 text-center">
+                <p class="text-sm text-gray-600">
+                    By logging in, you agree to our <a href="#" class="text-primary hover:underline">Terms of Service</a> and <a href="#" class="text-primary hover:underline">Privacy Policy</a>
+                </p>
+            </div>
+        </div>
+    </main>
+
+    <!-- SOS Button -->
+    <div id="sos-button-container"></div>
+
+    <!-- Footer Component -->
+    <footer id="footer-container"></footer>
+
+    <!-- Supabase JS Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- App Scripts -->
+    <script type="module" src="./js/app.js"></script>
+    <script type="module" src="./js/login.js"></script>
+</body>
+</html>

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Location - INCOIS</title>
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Custom Tailwind Configuration -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0B5677',
+                        accent: '#2AB7B7',
+                        danger: '#FF3B30',
+                        warn: '#FF8C00',
+                        sand: '#F5E9D6',
+                        gold: '#C49A42',
+                        text: '#0F172A',
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="./css/styles.css">
+</head>
+<body class="bg-white min-h-screen flex flex-col">
+    <!-- Header Component -->
+    <header id="header-container"></header>
+
+    <!-- Emergency Notification Bar -->
+    <div id="emergency-notification" class="bg-warn text-white p-3 text-center"></div>
+
+    <!-- Main Content -->
+    <main class="flex-grow container mx-auto p-4">
+        <div class="bg-white rounded-lg shadow-md p-6 max-w-4xl mx-auto">
+            <h1 class="text-2xl font-bold text-primary mb-4">Location Map Preview</h1>
+            
+            <div class="border border-gray-300 rounded-lg overflow-hidden">
+                <!-- Placeholder for map -->
+                <div class="bg-gray-200 w-full h-64 md:h-96 flex items-center justify-center">
+                    <div class="text-center p-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        <p class="mt-2 text-gray-600 font-medium">Location Map Preview</p>
+                        <p class="text-sm text-gray-500">Map integration will be available in future updates</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-6">
+                <h2 class="text-lg font-semibold text-primary mb-2">Your Location</h2>
+                <div id="user-location" class="p-3 bg-gray-100 rounded-lg">
+                    <p class="text-gray-700">Loading your location information...</p>
+                </div>
+            </div>
+            
+            <div class="mt-6">
+                <h2 class="text-lg font-semibold text-primary mb-2">Nearby Alerts</h2>
+                <div id="nearby-alerts" class="space-y-2">
+                    <!-- Placeholder for alerts -->
+                    <div class="animate-pulse">
+                        <div class="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                        <div class="h-4 bg-gray-200 rounded w-1/2"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- SOS Button -->
+    <div id="sos-button-container"></div>
+
+    <!-- Footer Component -->
+    <footer id="footer-container"></footer>
+
+    <!-- Supabase JS Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- App Scripts -->
+    <script type="module" src="./js/app.js"></script>
+    <script type="module" src="./js/location.js"></script>
+</body>
+</html>
