@@ -12,6 +12,18 @@ export function setSession(session) {
     localStorage.setItem('incois_session', JSON.stringify(session));
 }
 
+// Get session from localStorage
+export function getSession() {
+    const session = localStorage.getItem('incois_session');
+    return session ? JSON.parse(session) : null;
+}
+
+// Clear session from localStorage
+export function clearSession() {
+    localStorage.removeItem('incois_session');
+    localStorage.removeItem('incois_user');
+}
+
 // DOM Elements
 const headerContainer = document.getElementById('header-container');
 const footerContainer = document.getElementById('footer-container');
@@ -21,19 +33,37 @@ const emergencyNotification = document.getElementById('emergency-notification');
 // Emergency Warnings Mock Data
 const emergencyWarnings = {
     global: "Cyclone warning for Indian Ocean.",
-    locationSpecific: { "Kerala": "Heavy monsoon rains today." }
+    locationSpecific: { 
+        "Kerala": "Heavy monsoon rains today.",
+        "Tamil Nadu": "High waves expected along the coast.",
+        "Andhra Pradesh": "Fishermen advised not to venture into the sea.",
+        "Odisha": "Cyclone alert issued for coastal areas.",
+        "West Bengal": "Heavy rainfall expected in the next 24 hours.",
+        "Gujarat": "Rough sea conditions expected."
+    }
 };
 
+// Check if current page is public (doesn't require authentication)
+const publicPages = ['login.html', 'index.html', ''];
+const currentPage = window.location.pathname.split('/').pop() || '';
+
 // Initialize App
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    // Check authentication status first
+    const isAuthRequired = !publicPages.includes(currentPage);
+    const isAuthenticated = await checkAuthStatus();
+    
+    if (isAuthRequired && !isAuthenticated) {
+        // Redirect to login if authentication is required but user is not authenticated
+        window.location.href = 'login.html';
+        return;
+    }
+    
     // Load Components
     loadHeader();
     loadFooter();
     loadSOSButton();
     loadEmergencyNotifications();
-    
-    // Check Authentication Status
-    checkAuthStatus();
 });
 
 // Toggle mobile menu
@@ -81,8 +111,8 @@ function closeMobileMenuOnLinkClick() {
 
 // Load Header Component
 async function loadHeader() {
-    const { data: { user } } = await supabase.auth.getUser();
-    const userData = JSON.parse(localStorage.getItem('incois_user') || '{}');
+    const session = getSession();
+    const user = session ? await getUserProfile(session.user.id) : null;
     
     headerContainer.innerHTML = `
         <header class="site-header">
@@ -96,19 +126,19 @@ async function loadHeader() {
                 <!-- Desktop Navigation -->
                 <nav class="desktop-nav">
                     <a href="index.html" class="text-gray-700 hover:text-primary">Home</a>
-                    <a href="profile.html" class="text-gray-700 hover:text-primary">Profile</a>
+                    <a href="profile.html" class="text-gray-700 hover:text-primary" data-auth="show-when-logged-in">Profile</a>
                     <a href="location.html" class="text-gray-700 hover:text-primary">Location</a>
-                    <a href="report.html" class="text-gray-700 hover:text-primary">Report</a>
+                    <a href="report.html" class="text-gray-700 hover:text-primary" data-auth="show-when-logged-in">Report</a>
                     
                     ${user ? `
-                        <div class="user-profile">
+                        <div class="user-profile" data-auth="show-when-logged-in">
                             <div class="user-avatar">
-                                ${userData?.name?.charAt(0)?.toUpperCase() || 'U'}
+                                ${user.name?.charAt(0)?.toUpperCase() || 'U'}
                             </div>
-                            <span class="hidden md:inline">${userData?.name || 'User'}</span>
+                            <span class="hidden md:inline">${user.name || 'User'}</span>
                         </div>
                     ` : `
-                        <a href="login.html" class="bg-primary text-white px-4 py-2 rounded-md hover:bg-opacity-90">
+                        <a href="login.html" class="bg-primary text-white px-4 py-2 rounded-md hover:bg-opacity-90" data-auth="show-when-logged-out">
                             Login / Register
                         </a>
                     `}
@@ -139,18 +169,18 @@ async function loadHeader() {
                         
                         <nav class="flex-1 flex flex-col space-y-4">
                             <a href="index.html" class="text-gray-700 hover:text-primary py-2">Home</a>
-                            <a href="profile.html" class="text-gray-700 hover:text-primary py-2">Profile</a>
+                            <a href="profile.html" class="text-gray-700 hover:text-primary py-2" data-auth="show-when-logged-in">Profile</a>
                             <a href="location.html" class="text-gray-700 hover:text-primary py-2">Location</a>
-                            <a href="report.html" class="text-gray-700 hover:text-primary py-2">Report</a>
+                            <a href="report.html" class="text-gray-700 hover:text-primary py-2" data-auth="show-when-logged-in">Report</a>
                             
                             ${user ? `
                                 <div class="mt-auto pt-4 border-t border-gray-200">
                                     <div class="flex items-center space-x-3">
                                         <div class="user-avatar">
-                                            ${userData?.name?.charAt(0)?.toUpperCase() || 'U'}
+                                            ${user.name?.charAt(0)?.toUpperCase() || 'U'}
                                         </div>
                                         <div>
-                                            <p class="font-medium text-gray-900">${userData?.name || 'User'}</p>
+                                            <p class="font-medium text-gray-900">${user.name || 'User'}</p>
                                             <button onclick="handleLogout()" class="text-sm text-primary hover:underline">
                                                 Sign out
                                             </button>
@@ -158,7 +188,7 @@ async function loadHeader() {
                                     </div>
                                 </div>
                             ` : `
-                                <div class="mt-auto pt-4 border-t border-gray-200">
+                                <div class="mt-auto pt-4 border-t border-gray-200" data-auth="show-when-logged-out">
                                     <a href="login.html" class="block w-full text-center bg-primary text-white px-4 py-2 rounded-md hover:bg-opacity-90">
                                         Login / Register
                                     </a>
@@ -196,6 +226,26 @@ async function loadHeader() {
     
     // Close menu when clicking outside
     document.addEventListener('click', closeMobileMenuOnClickOutside);
+    
+    // Update UI based on auth status
+    updateAuthUI(!!user);
+}
+
+// Get user profile from database
+async function getUserProfile(userId) {
+    try {
+        const { data: profile, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', userId)
+            .single();
+            
+        if (error) throw error;
+        return profile;
+    } catch (error) {
+        console.error('Error fetching user profile:', error);
+        return null;
+    }
 }
 
 // Load Footer Component
@@ -270,58 +320,39 @@ function loadEmergencyNotifications() {
 
 // Check Authentication Status
 async function checkAuthStatus() {
-    const { data: { session } } = await supabase.auth.getSession();
-    const currentPath = window.location.pathname.split('/').pop();
+    const session = getSession();
     
-    if (session) {
-        // User is authenticated
-        if (currentPath === 'login.html' || currentPath === '') {
-            // Redirect to home if already logged in
+    if (session && session.expires_at > Date.now()) {
+        // Session is valid
+        const currentPath = window.location.pathname.split('/').pop() || '';
+        
+        if (publicPages.includes(currentPath) && currentPath !== 'index.html') {
+            // Redirect to home if trying to access public pages (except index) while logged in
             window.location.href = 'index.html';
         }
         
         // Update UI for authenticated user
-        const authElements = document.querySelectorAll('[data-auth]');
-        authElements.forEach(el => {
-            if (el.dataset.auth === 'show-when-logged-out') el.style.display = 'none';
-            if (el.dataset.auth === 'show-when-logged-in') el.style.display = 'block';
-        });
-        
-        // Load user data if not already in localStorage
-        const userData = JSON.parse(localStorage.getItem('incois_user') || '{}');
-        if (!userData.name) {
-            const { data: profile } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', session.user.id)
-                .single();
-                
-            if (profile) {
-                localStorage.setItem('incois_user', JSON.stringify({
-                    name: profile.name,
-                    phone: profile.phone,
-                    location: profile.location
-                }));
-            }
-        }
-        
-        // Reload header to show updated user info
-        loadHeader();
+        updateAuthUI(true);
+        return true;
     } else {
-        // User is not authenticated
-        if (currentPath !== 'login.html' && !['', 'index.html'].includes(currentPath)) {
-            // Redirect to login if trying to access protected page
-            window.location.href = 'login.html';
-            return;
-        }
-        
-        // Update UI for unauthenticated user
-        const authElements = document.querySelectorAll('[data-auth]');
-        authElements.forEach(el => {
-            if (el.dataset.auth === 'show-when-logged-out') el.style.display = 'block';
-            if (el.dataset.auth === 'show-when-logged-in') el.style.display = 'none';
-        });
+        // Session is invalid or expired
+        clearSession();
+        updateAuthUI(false);
+        return false;
     }
+}
+
+// Update UI based on authentication status
+function updateAuthUI(isAuthenticated) {
+    const authElements = document.querySelectorAll('[data-auth]');
+    authElements.forEach(el => {
+        if (el.dataset.auth === 'show-when-logged-out') {
+            el.style.display = isAuthenticated ? 'none' : 'block';
+        }
+        if (el.dataset.auth === 'show-when-logged-in') {
+            el.style.display = isAuthenticated ? 'block' : 'none';
+        }
+    });
 }
 
 // Get Session from localStorage
@@ -330,8 +361,6 @@ export function getSession() {
     return sessionStr ? JSON.parse(sessionStr) : null;
 }
 
-// Set Session in localStorage is now exported at the top of the file
-
 // Clear Session from localStorage
 function clearSession() {
     localStorage.removeItem('incois_session');
@@ -339,18 +368,11 @@ function clearSession() {
 }
 
 // Handle Logout
-window.handleLogout = async function() {
-    try {
-        const { error } = await supabase.auth.signOut();
-        if (error) throw error;
-        
-        clearSession();
-        window.location.href = 'login.html';
-    } catch (error) {
-        console.error('Error logging out:', error);
-        alert('Error logging out. Please try again.');
-    }
-};
+window.handleLogout = function() {
+    // Clear session and redirect to login
+    clearSession();
+    window.location.href = 'login.html';
+}
 
 // Export functions for use in other modules
 export {
