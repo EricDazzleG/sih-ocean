@@ -2,6 +2,10 @@
 
 import { supabase } from './app.js';
 
+// Debug: Log Supabase initialization
+console.log('Register script loaded');
+console.log('Supabase instance:', supabase);
+
 document.addEventListener('DOMContentLoaded', () => {
     const registerForm = document.getElementById('register-form');
     const statusMessage = document.getElementById('status-message');
@@ -59,6 +63,8 @@ async function handleRegister(event) {
     const formData = new FormData(form);
     const statusMessage = document.getElementById('status-message');
     
+    console.log('Form submitted');
+    
     // Get form values
     const name = formData.get('name');
     const email = formData.get('email');
@@ -79,14 +85,18 @@ async function handleRegister(event) {
         return;
     }
     
+    // Show loading state
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalBtnText = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = 'Creating Account...';
+    
     try {
-        // Show loading state
-        const submitBtn = form.querySelector('button[type="submit"]');
-        const originalBtnText = submitBtn.innerHTML;
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = 'Creating Account...';
+        console.log('Starting registration process...');
         
         // 1. Create user in Supabase Auth
+        console.log('Calling supabase.auth.signUp with:', { email, password, name, phone, userType });
+        
         const { data: authData, error: authError } = await supabase.auth.signUp({
             email,
             password,
@@ -94,41 +104,86 @@ async function handleRegister(event) {
                 data: {
                     name,
                     phone,
-                    user_type: userType
-                }
+                    user_type: userType,
+                    location
+                },
+                emailRedirectTo: window.location.origin + '/login.html'
             }
         });
         
-        if (authError) throw authError;
+        console.log('Auth response:', { authData, authError });
         
-        // 2. Save additional user data to profiles table
+        if (authError) {
+            console.error('Auth error details:', {
+                name: authError.name,
+                message: authError.message,
+                status: authError.status
+            });
+            throw authError;
+        }
+        
+        if (!authData.user) {
+            throw new Error('No user data returned from auth');
+        }
+        
+        console.log('User created successfully:', authData.user.id);
+        
+        // 2. Manually insert into profiles table (in case trigger didn't work)
+        console.log('Attempting to insert profile data...');
+        
         const { data: profileData, error: profileError } = await supabase
             .from('profiles')
-            .insert([
-                { 
-                    id: authData.user.id,
-                    email,
-                    name,
-                    phone,
-                    location,
-                    user_type: userType,
-                    created_at: new Date().toISOString()
-                }
-            ]);
+            .insert({
+                id: authData.user.id,
+                email,
+                name,
+                phone,
+                location,
+                user_type: userType
+            })
+            .select();
             
-        if (profileError) throw profileError;
+        console.log('Profile insert response:', { profileData, profileError });
+            
+        if (profileError) {
+            console.error('Profile insert error:', profileError);
+            // Try to continue even if profile insert fails, as the trigger might have worked
+            if (!profileError.message.includes('duplicate key')) {
+                throw profileError;
+            }
+        }
         
         // Show success message
-        showStatusMessage('Registration successful! Redirecting to login...', 'success');
+        const successMessage = 'Registration successful! ' + 
+            (authData.session ? 'You are now logged in.' : 'Please check your email to confirm your account.');
+            
+        showStatusMessage(successMessage, 'success');
         
-        // Redirect to login after a short delay
-        setTimeout(() => {
-            window.location.href = 'login.html';
-        }, 2000);
+        // If user is already logged in, redirect to home, otherwise to login
+        if (authData.session) {
+            console.log('User is logged in, redirecting to home...');
+            window.location.href = 'index.html';
+        } else {
+            console.log('Email confirmation required, redirecting to login...');
+            setTimeout(() => {
+                window.location.href = 'login.html';
+            }, 3000);
+        }
         
     } catch (error) {
         console.error('Registration error:', error);
-        const errorMessage = error.message || 'An error occurred during registration';
+        
+        // More specific error messages
+        let errorMessage = 'An error occurred during registration';
+        
+        if (error.message.includes('already registered')) {
+            errorMessage = 'This email is already registered. Please log in instead.';
+        } else if (error.message.includes('password')) {
+            errorMessage = 'Password must be at least 6 characters long';
+        } else if (error.message) {
+            errorMessage = error.message;
+        }
+        
         showStatusMessage(errorMessage, 'error');
     } finally {
         // Reset button state
