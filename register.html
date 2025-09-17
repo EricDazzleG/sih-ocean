@@ -136,26 +136,11 @@
     <!-- Footer Component -->
     <footer id="footer-container"></footer>
 
-    <!-- Load Supabase first -->
+    <!-- Supabase JS Library -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
-    <!-- Initialize Supabase -->
-    <script>
-        // Initialize Supabase client
-        const supabase = supabase.createClient(
-            'https://uxculnxvfukuiczadoqz.supabase.co',
-            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV4Y3Vsbnh2ZnVrdWljemFkb3F6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxMTc3OTEsImV4cCI6MjA3MzY5Mzc5MX0.YebX841KOKE2PP_DChIV70vHr3H4xTdHqxbDOx9C89M'
-        );
-        
-        // Make it globally available
-        window.supabase = supabase;
-        console.log('Supabase initialized in register.html');
-        
-        // Load the register script
-        const registerScript = document.createElement('script');
-        registerScript.type = 'module';
-        registerScript.src = './js/register.js';
-        document.body.appendChild(registerScript);
-    </script>
+
+    <!-- App Scripts -->
+    <script type="module" src="./js/app.js"></script>
+    <script type="module" src="./js/register.js"></script>
 </body>
 </html>
