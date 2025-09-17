@@ -1,7 +1,7 @@
 // Profile Page JavaScript
 
 // Import auth functions
-import { getUser, signOut, updateUserData, showStatusMessage } from './auth.js';
+import { getUser, signOut, updateUserData, initSupabase, getSupabase } from './auth.js';
 
 // DOM Elements
 const profileImage = document.getElementById('profile-image');
@@ -20,6 +20,9 @@ const editForm = document.getElementById('edit-profile-form');
 // Initialize Profile Page
 document.addEventListener('DOMContentLoaded', async () => {
     try {
+        // Ensure Supabase is initialized
+        await initSupabase();
+
         // Load user profile
         await loadUserProfile();
         
@@ -104,8 +107,7 @@ async function loadUserProfile() {
 // Load user statistics
 async function loadUserStatistics(userId) {
     try {
-        const supabase = window.supabase;
-        if (!supabase) throw new Error('Supabase client not available');
+        const supabase = getSupabase();
         
         // Get reports count
         const { data: reports, error: reportsError } = await supabase
@@ -114,13 +116,13 @@ async function loadUserStatistics(userId) {
             .eq('user_id', userId);
         
         if (!reportsError && reportsCount) {
-            reportsCount.textContent = reports.length || 0;
+            // If count meta is not available, fall back to length
+            const count = Array.isArray(reports) ? reports.length : (reports?.length || 0);
+            reportsCount.textContent = count;
         }
         
-        // Get alerts count (if applicable)
+        // Alerts count (demo)
         if (alertsCount) {
-            // For demo purposes, we'll use a random number
-            // In a real app, you would fetch this from your database
             alertsCount.textContent = Math.floor(Math.random() * 5);
         }
         
@@ -133,13 +135,10 @@ async function loadUserStatistics(userId) {
 function enableEditMode() {
     if (!editForm) return;
     
-    // Populate form fields
-    const user = JSON.parse(localStorage.getItem('sb-user'))?.user;
-    const userData = user?.user_metadata || {};
-    
-    editForm.elements['name'].value = userData.name || '';
-    editForm.elements['phone'].value = userData.phone || '';
-    editForm.elements['location'].value = userData.location || '';
+    // Populate form fields from current DOM values if user not cached
+    editForm.elements['name'].value = (profileName?.textContent || '').replace('N/A','');
+    editForm.elements['phone'].value = (profilePhone?.textContent || '').replace('Phone: ','').replace('N/A','');
+    editForm.elements['location'].value = (profileLocation?.textContent || '').replace('Location: ','').replace('N/A','');
     
     // Toggle visibility
     document.querySelectorAll('.view-mode').forEach(el => el.classList.add('hidden'));
@@ -201,4 +200,10 @@ async function handleLogout() {
         console.error('Error during logout:', error);
         showStatusMessage('Failed to log out. Please try again.', 'error');
     }
+}
+
+// Local status message helper
+function showStatusMessage(message, type = 'info') {
+    // Optionally attach to a status element if you add one to the page
+    console.log(`[Profile] ${type}:`, message);
 }
