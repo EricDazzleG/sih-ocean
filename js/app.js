@@ -42,130 +42,46 @@ async function loadHeader() {
     const userData = JSON.parse(localStorage.getItem('incois_user') || '{}');
     
     headerContainer.innerHTML = `
-        <nav class="site-header bg-white shadow-md">
-            <div class="container mx-auto px-4 py-3">
-                <div class="flex justify-between items-center">
-                    <!-- Logo and Mobile Menu Toggle -->
-                    <div class="flex items-center space-x-4">
-                        <button id="menu-toggle" class="md:hidden p-2 rounded-md text-primary hover:bg-gray-100 focus:outline-none">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                            </svg>
-                        </button>
-                        <a href="index.html" class="flex items-center">
-                            <img src="./assets/incois-logo.svg" alt="INCOIS Logo" class="h-10">
-                            <span class="ml-3 text-xl font-bold text-primary">INCOIS</span>
-                        </a>
-                    </div>
+        <header class="site-header">
+            <div class="nav-container">
+                <!-- Logo -->
+                <a href="index.html" class="logo">
+                    <img src="./assets/incois-logo.svg" alt="INCOIS Logo">
+                    <span>INCOIS</span>
+                </a>
+                
+                <!-- Desktop Navigation -->
+                <nav class="desktop-nav">
+                    <a href="index.html" class="text-gray-700 hover:text-primary">Home</a>
+                    <a href="profile.html" class="text-gray-700 hover:text-primary">Profile</a>
+                    <a href="location.html" class="text-gray-700 hover:text-primary">Location</a>
+                    <a href="report.html" class="text-gray-700 hover:text-primary">Report</a>
                     
-                    <!-- Desktop Navigation -->
-                    <div class="hidden md:flex items-center space-x-6">
-                        <a href="index.html" class="text-gray-700 hover:text-primary">Home</a>
-                        <a href="profile.html" class="text-gray-700 hover:text-primary">Profile</a>
-                        <a href="location.html" class="text-gray-700 hover:text-primary">Location</a>
-                        <a href="report.html" class="text-gray-700 hover:text-primary">Report</a>
-                        
-                        ${user ? `
-                            <div class="flex items-center space-x-2 ml-4">
-                                <div class="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center">
-                                    ${userData?.name?.charAt(0)?.toUpperCase() || 'U'}
-                                </div>
-                                <span class="text-sm font-medium">${userData?.name || 'User'}</span>
+                    ${user ? `
+                        <div class="user-profile">
+                            <div class="user-avatar">
+                                ${userData?.name?.charAt(0)?.toUpperCase() || 'U'}
                             </div>
-                        ` : `
-                            <a href="login.html" class="bg-primary text-white px-4 py-2 rounded-md hover:bg-opacity-90">
-                                Login / Register
-                            </a>
-                        `}
-                    </div>
-                </div>
-            </div>
-        </nav>
-        
-        <!-- Mobile Menu -->
-        <div id="menu-overlay" class="menu-overlay"></div>
-        <div id="mobile-menu" class="mobile-menu">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-bold text-primary">Menu</h2>
-                <button id="close-menu" class="p-2 rounded-md text-gray-500 hover:bg-gray-100 focus:outline-none">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
+                            <span class="hidden md:inline">${userData?.name || 'User'}</span>
+                        </div>
+                    ` : `
+                        <a href="login.html" class="bg-primary text-white px-4 py-2 rounded-md hover:bg-opacity-90">
+                            Login / Register
+                        </a>
+                    `}
+                </nav>
+                
+                <!-- Mobile Navigation Toggle (simplified) -->
+                <button class="mobile-nav-toggle" onclick="window.location.href='${user ? 'profile.html' : 'login.html'}">
+                    ${user ? `
+                        <div class="user-avatar">
+                            ${userData?.name?.charAt(0)?.toUpperCase() || 'U'}
+                        </div>
+                    ` : '☰'}
                 </button>
             </div>
-            
-            ${user ? `
-                <div class="flex items-center space-x-3 mb-6 p-4 bg-gray-50 rounded-lg">
-                    <div class="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center text-lg font-medium">
-                        ${userData?.name?.charAt(0)?.toUpperCase() || 'U'}
-                    </div>
-                    <div>
-                        <p class="font-medium">${userData?.name || 'User'}</p>
-                        <p class="text-sm text-gray-500">${userData?.phone || ''}</p>
-                    </div>
-                </div>
-            ` : ''}
-            
-            <ul class="space-y-2">
-                <li><a href="index.html" class="block py-3 px-4 rounded hover:bg-gray-100">Home</a></li>
-                ${user ? `
-                    <li><a href="profile.html" class="block py-3 px-4 rounded hover:bg-gray-100">My Profile</a></li>
-                    <li><a href="location.html" class="block py-3 px-4 rounded hover:bg-gray-100">Location Preview</a></li>
-                    <li><a href="report.html" class="block py-3 px-4 rounded hover:bg-gray-100">File a Report</a></li>
-                    <li>
-                        <button onclick="handleLogout()" class="w-full text-left py-3 px-4 rounded hover:bg-gray-100 text-red-600">
-                            Logout
-                        </button>
-                    </li>
-                ` : `
-                    <li><a href="login.html" class="block py-3 px-4 rounded bg-primary text-white text-center hover:bg-opacity-90">
-                        Login / Register
-                    </a></li>
-                `}
-            </ul>
-        </div>
+        </header>
     `;
-    
-    // Setup Menu Toggle with proper event delegation
-    document.addEventListener('click', (e) => {
-        const menuToggle = document.getElementById('menu-toggle');
-        const closeMenu = document.getElementById('close-menu');
-        const mobileMenu = document.getElementById('mobile-menu');
-        const menuOverlay = document.getElementById('menu-overlay');
-        
-        if (e.target === menuToggle || menuToggle?.contains(e.target)) {
-            // Toggle menu open
-            mobileMenu?.classList.add('open');
-            menuOverlay?.classList.add('open');
-            document.body.style.overflow = 'hidden';
-            return;
-        }
-        
-        if (e.target === closeMenu || 
-            e.target === menuOverlay || 
-            (mobileMenu && !mobileMenu.contains(e.target) && menuOverlay?.classList.contains('open'))) {
-            // Close menu
-            mobileMenu?.classList.remove('open');
-            menuOverlay?.classList.remove('open');
-            document.body.style.overflow = '';
-        }
-    });
-    
-    // Close menu when clicking outside on mobile
-    document.addEventListener('touchstart', (e) => {
-        const mobileMenu = document.getElementById('mobile-menu');
-        const menuToggle = document.getElementById('menu-toggle');
-        const menuOverlay = document.getElementById('menu-overlay');
-        
-        if (mobileMenu?.classList.contains('open') && 
-            !mobileMenu.contains(e.target) && 
-            e.target !== menuToggle && 
-            !menuToggle?.contains(e.target)) {
-            mobileMenu.classList.remove('open');
-            menuOverlay?.classList.remove('open');
-            document.body.style.overflow = '';
-        }
-    });
 }
 
 // Load Footer Component
