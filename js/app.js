@@ -1,24 +1,10 @@
 // Main Application JavaScript
 
-// Supabase Configuration
-const SUPABASE_URL = 'https://uxculnxvfukuiczadoqz.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV4Y3Vsbnh2ZnVrdWljemFkb3F6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxMTc3OTEsImV4cCI6MjA3MzY5Mzc5MX0.YebX841KOKE2PP_DChIV70vHr3H4xTdHqxbDOx9C89M';
+// Import Supabase client from auth.js
+import { getSupabase } from './auth.js';
 
-// Initialize Supabase Client
-let supabase;
-
-try {
-    // Initialize Supabase client
-    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    
-    // Make it available globally for debugging
-    window.supabaseClient = supabase;
-    
-    console.log('Supabase client initialized successfully');
-} catch (error) {
-    console.error('Failed to initialize Supabase client:', error);
-    throw error; // Re-throw to prevent the app from running without Supabase
-}
+// Get Supabase client
+const supabase = getSupabase();
 
 export { supabase };
 
@@ -97,7 +83,7 @@ function closeMobileMenuOnLinkClick() {
 // Load Header Component
 async function loadHeader() {
     const { data: { user } } = await supabase.auth.getUser();
-    const userData = JSON.parse(localStorage.getItem('incois_user') || '{}');
+    const userData = user?.user_metadata || {};
     
     headerContainer.innerHTML = `
         <header class="site-header">
@@ -235,7 +221,7 @@ function loadFooter() {
                 </div>
                 
                 <div class="mt-8 pt-4 border-t border-blue-700">
-                    <p class="text-sm text-center">© ${new Date().getFullYear()} INCOIS. All rights reserved.</p>
+                    <p class="text-sm text-center"> 2024 INCOIS. All rights reserved.</p>
                 </div>
             </div>
         </footer>
@@ -302,24 +288,6 @@ async function checkAuthStatus() {
             if (el.dataset.auth === 'show-when-logged-in') el.style.display = 'block';
         });
         
-        // Load user data if not already in localStorage
-        const userData = JSON.parse(localStorage.getItem('incois_user') || '{}');
-        if (!userData.name) {
-            const { data: profile } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', session.user.id)
-                .single();
-                
-            if (profile) {
-                localStorage.setItem('incois_user', JSON.stringify({
-                    name: profile.name,
-                    phone: profile.phone,
-                    location: profile.location
-                }));
-            }
-        }
-        
         // Reload header to show updated user info
         loadHeader();
     } else {
@@ -344,8 +312,6 @@ export function getSession() {
     const sessionStr = localStorage.getItem('incois_session');
     return sessionStr ? JSON.parse(sessionStr) : null;
 }
-
-// Set Session in localStorage is now exported at the top of the file
 
 // Clear Session from localStorage
 function clearSession() {

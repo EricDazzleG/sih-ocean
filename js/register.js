@@ -1,7 +1,7 @@
 // Register Page JavaScript
 
 // Import auth functions
-import { signUp, showStatusMessage } from './auth.js';
+import { signUp } from './auth.js';
 
 // DOM Elements
 const registerForm = document.getElementById('register-form');
@@ -114,10 +114,10 @@ async function handleRegister(event) {
         // More specific error messages
         let errorMessage = 'An error occurred during registration';
         
-        if (error.message.includes('already registered') || 
-            error.message.includes('already in use')) {
+        if (error.message?.includes('already registered') || 
+            error.message?.includes('already in use')) {
             errorMessage = 'This email is already registered. Please log in instead.';
-        } else if (error.message.includes('password')) {
+        } else if (error.message?.includes('password')) {
             errorMessage = 'Password must be at least 6 characters long';
         } else if (error.message) {
             errorMessage = error.message;
