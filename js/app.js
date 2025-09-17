@@ -241,13 +241,154 @@ function loadSOSButton() {
         </button>
     `;
     
+    // Ensure modal exists once per page
+    ensureSOSModal();
+    
     // Add click handler if the button exists
     const btn = document.getElementById('sos-button');
     if (btn) {
-        btn.addEventListener('click', () => {
-            alert('Emergency SOS feature will be implemented in the next version.');
-        });
+        btn.addEventListener('click', openSOSModal);
     }
+}
+
+// Create SOS modal markup if not present
+function ensureSOSModal() {
+    if (document.getElementById('sos-modal')) return;
+
+    const modal = document.createElement('div');
+    modal.id = 'sos-modal';
+    modal.className = 'fixed inset-0 z-50 hidden';
+    modal.innerHTML = `
+        <div id="sos-backdrop" class="absolute inset-0 bg-black bg-opacity-50"></div>
+        <div class="absolute inset-0 flex items-center justify-center p-4">
+            <div class="w-full max-w-md bg-white rounded-lg shadow-lg overflow-hidden">
+                <div class="px-5 py-4 border-b">
+                    <h3 class="text-lg font-semibold text-primary">Emergency SOS</h3>
+                    <p class="text-sm text-gray-600 mt-1">Share your location and what help you need.</p>
+                </div>
+                <div class="p-5 space-y-4">
+                    <div>
+                        <label for="sos-location" class="block text-sm font-medium text-gray-700 mb-1">Approximate Location</label>
+                        <div class="flex space-x-2">
+                            <input id="sos-location" type="text" placeholder="e.g., Ernakulam, Kerala or 9.98, 76.28" class="flex-grow px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary" />
+                            <button id="sos-detect" type="button" class="bg-accent text-white px-3 rounded-md" title="Detect location">📍</button>
+                        </div>
+                        <p id="sos-loc-hint" class="text-xs text-gray-500 mt-1">We use browser geolocation if allowed.</p>
+                    </div>
+                    <div>
+                        <p class="block text-sm font-medium text-gray-700 mb-1">Type of Help Needed</p>
+                        <div class="grid grid-cols-2 gap-2 text-sm">
+                            <label class="inline-flex items-center space-x-2"><input type="checkbox" value="fire" class="sos-help"> <span>Fire Force</span></label>
+                            <label class="inline-flex items-center space-x-2"><input type="checkbox" value="ambulance" class="sos-help"> <span>Ambulance</span></label>
+                            <label class="inline-flex items-center space-x-2"><input type="checkbox" value="rescue" class="sos-help"> <span>Rescue</span></label>
+                            <label class="inline-flex items-center space-x-2"><input type="checkbox" value="police" class="sos-help"> <span>Police</span></label>
+                            <label class="inline-flex items-center space-x-2"><input type="checkbox" value="coast_guard" class="sos-help"> <span>Coast Guard</span></label>
+                            <label class="inline-flex items-center space-x-2"><input type="checkbox" value="medical" class="sos-help"> <span>Medical Aid</span></label>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="sos-urgency" class="block text-sm font-medium text-gray-700 mb-1">Urgency</label>
+                        <input id="sos-urgency" type="range" min="1" max="5" step="1" value="3" class="w-full">
+                        <div class="flex justify-between text-xs text-gray-500">
+                            <span>Low</span><span>Medium</span><span>Critical</span>
+                        </div>
+                    </div>
+                    <div id="sos-message" class="hidden text-sm p-3 rounded-md"></div>
+                </div>
+                <div class="px-5 py-3 border-t flex justify-end space-x-2">
+                    <button id="sos-cancel" type="button" class="px-4 py-2 rounded-md border">Cancel</button>
+                    <button id="sos-submit" type="button" class="px-4 py-2 rounded-md bg-primary text-white">Send SOS</button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    // Wire events
+    document.getElementById('sos-backdrop').addEventListener('click', closeSOSModal);
+    document.getElementById('sos-cancel').addEventListener('click', closeSOSModal);
+    document.getElementById('sos-detect').addEventListener('click', detectSOSLocation);
+    document.getElementById('sos-submit').addEventListener('click', submitSOS);
+}
+
+function openSOSModal() {
+    const modal = document.getElementById('sos-modal');
+    if (!modal) return;
+    modal.classList.remove('hidden');
+}
+
+function closeSOSModal() {
+    const modal = document.getElementById('sos-modal');
+    if (!modal) return;
+    modal.classList.add('hidden');
+    // reset transient message
+    const msg = document.getElementById('sos-message');
+    if (msg) {
+        msg.className = 'hidden text-sm p-3 rounded-md';
+        msg.textContent = '';
+    }
+}
+
+async function detectSOSLocation() {
+    const input = document.getElementById('sos-location');
+    const hint = document.getElementById('sos-loc-hint');
+    if (!navigator.geolocation) {
+        if (hint) hint.textContent = 'Geolocation not supported. Enter location manually.';
+        return;
+    }
+    try {
+        const position = await new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: false, timeout: 8000 });
+        });
+        const { latitude, longitude } = position.coords;
+        if (input) input.value = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+        if (hint) hint.textContent = 'Location detected. You can edit it if needed.';
+    } catch (e) {
+        if (hint) hint.textContent = 'Could not get location. Please enter manually.';
+        console.error('SOS geolocation error:', e);
+    }
+}
+
+function submitSOS() {
+    const loc = (document.getElementById('sos-location')?.value || '').trim();
+    const helps = Array.from(document.querySelectorAll('.sos-help'))
+        .filter(cb => cb.checked)
+        .map(cb => cb.value);
+    const urgency = Number(document.getElementById('sos-urgency')?.value || 3);
+
+    const msg = document.getElementById('sos-message');
+    if (!loc) {
+        showSOSMessage('Please provide your approximate location.', 'error');
+        return;
+    }
+    if (helps.length === 0) {
+        showSOSMessage('Select at least one type of help needed.', 'error');
+        return;
+    }
+
+    // Simulate ETA based on urgency and help types
+    let base = 20; // minutes
+    if (urgency >= 4) base = 10; // faster for higher urgency
+    if (helps.includes('ambulance') || helps.includes('rescue')) base -= 2;
+    if (helps.includes('coast_guard')) base -= 3;
+    const minETA = Math.max(4, base - 3);
+    const maxETA = Math.max(minETA + 3, base + 2);
+
+    showSOSMessage(`SOS sent. Estimated response time: ${minETA}-${maxETA} minutes. Stay safe; responders have been notified.`, 'success');
+
+    // Auto-close after a short delay
+    setTimeout(closeSOSModal, 2500);
+}
+
+function showSOSMessage(text, type) {
+    const msg = document.getElementById('sos-message');
+    if (!msg) return;
+    msg.textContent = text;
+    msg.classList.remove('hidden');
+    msg.classList.remove('bg-red-100','text-red-700','bg-green-100','text-green-700','bg-blue-100','text-blue-700');
+    if (type === 'error') msg.classList.add('bg-red-100','text-red-700');
+    else if (type === 'success') msg.classList.add('bg-green-100','text-green-700');
+    else msg.classList.add('bg-blue-100','text-blue-700');
 }
 
 // Load Emergency Notifications
