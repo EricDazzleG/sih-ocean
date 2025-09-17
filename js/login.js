@@ -1,7 +1,7 @@
 // Login Page JavaScript
 
-// Import from app.js
-import { supabase, setSession } from './app.js';
+// Import auth functions
+import { signIn, signUp, getSession, showStatusMessage } from './auth.js';
 
 // DOM Elements
 const loginForm = document.getElementById('login-form');
@@ -10,241 +10,106 @@ const locationInput = document.getElementById('location');
 const statusMessage = document.getElementById('status-message');
 
 // Initialize Login Page
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     // Check for existing session
-    checkSession();
-    
-    // Setup Form Submission
-    if (loginForm) {
-        loginForm.addEventListener('submit', handleLogin);
+    try {
+        const session = await getSession();
+        if (session) {
+            // If user is already logged in, redirect to home
+            window.location.href = 'index.html';
+            return;
+        }
+    } catch (error) {
+        console.error('Error checking session:', error);
     }
     
-    // Setup Detect Location Button
+    // Setup location detection
     if (detectLocationBtn) {
         detectLocationBtn.addEventListener('click', detectLocation);
     }
+    
+    // Setup form submission
+    if (loginForm) {
+        loginForm.addEventListener('submit', handleLogin);
+    }
 });
 
-// Check for existing session
-async function checkSession() {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-        // If user is already logged in, redirect to home
-        window.location.href = 'index.html';
-    }
-}
-
-// Handle Login Form Submission
+// Handle login form submission
 async function handleLogin(event) {
     event.preventDefault();
     
-    // Get form data
-    const name = document.getElementById('name').value.trim();
-    const phone = document.getElementById('phone').value.trim();
-    const location = document.getElementById('location').value.trim();
+    const form = event.target;
+    const formData = new FormData(form);
     
-    // Validate form data
-    if (!name || !phone || !location) {
-        showStatus('Please fill in all required fields.', 'error');
+    // Get form values
+    const email = formData.get('email');
+    const password = formData.get('password');
+    
+    // Validate form
+    if (!email || !password) {
+        showStatusMessage('Please enter both email and password', 'error');
         return;
     }
     
     // Show loading state
-    showStatus('Processing your request...', 'loading');
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalBtnText = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = 'Logging in...';
     
     try {
-        // First try to sign in
-        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-            email: `${phone}@incois.user`,
-            password: phone
-        });
+        // Attempt to sign in
+        const { user, error } = await signIn(email, password);
         
-        if (signInError) {
-            // If sign in fails, try to sign up
-            if (signInError.message.includes('Invalid login credentials')) {
-                // Sign up new user
-                const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-                    email: `${phone}@incois.user`,
-                    password: phone,
-                    options: {
-                        data: {
-                            name,
-                            phone,
-                            location
-                        }
-                    }
-                });
-                
-                if (signUpError) throw signUpError;
-                
-                // Store user info in localStorage
-                storeUserData(name, phone, location);
-                showStatus('Account created successfully! Please check your email for verification.', 'success');
-                
-                // Auto-login after signup
-                await supabase.auth.signInWithPassword({
-                    email: `${phone}@incois.user`,
-                    password: phone
-                });
-                
+        if (error) {
+            // Handle specific error cases
+            if (error.message.includes('Invalid login credentials')) {
+                throw new Error('Invalid email or password');
+            } else if (error.message.includes('Email not confirmed')) {
+                throw new Error('Please check your email to confirm your account before logging in');
             } else {
-                throw signInError;
+                throw error;
             }
-        } else {
-            // Existing user signed in successfully
-            storeUserData(name, phone, location);
-            showStatus('Welcome back! Logging you in...', 'success');
         }
         
-        // Ensure user data is properly saved
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-            // Update profile in database
-            const { error: profileError } = await supabase
-                .from('profiles')
-                .upsert({
-                    id: user.id,
-                    name: name,
-                    phone: phone,
-                    location: location,
-                    updated_at: new Date().toISOString()
-                });
-            
-            if (profileError) {
-                console.error('Error updating profile:', profileError);
-            }
-            
-            // Update local storage with latest data
-            localStorage.setItem('incois_user', JSON.stringify({
-                name: name,
-                phone: phone,
-                location: location,
-                id: user.id
-            }));
-        }
+        // Login successful
+        showStatusMessage('Login successful! Redirecting...', 'success');
         
-        // Force reload the header to show updated user info
-        if (window.parent && window.parent.loadHeader) {
-            window.parent.loadHeader();
-        }
-        
-        // Redirect to home page after a short delay
+        // Redirect to home page
         setTimeout(() => {
             window.location.href = 'index.html';
-        }, 500);
+        }, 1000);
         
     } catch (error) {
-        console.error('Authentication error:', error);
-        showStatus(error.message || 'An error occurred. Please try again.', 'error');
+        console.error('Login error:', error);
+        showStatusMessage(error.message || 'An error occurred during login', 'error');
+    } finally {
+        // Reset button state
+        const submitBtn = form.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnText;
+        }
     }
 }
 
-// Store user data in localStorage
-function storeUserData(name, phone, location) {
-    localStorage.setItem('incois_user', JSON.stringify({
-        name,
-        phone,
-        location
-    }));
-}
-
-// Show status message
-function showStatus(message, type = 'info') {
-    const statusEl = document.getElementById('status-message');
-    if (!statusEl) return;
-    
-    statusEl.textContent = message;
-    statusEl.className = 'mt-4 p-3 rounded-md text-sm';
-    
-    switch (type) {
-        case 'error':
-            statusEl.classList.add('bg-red-100', 'text-red-700');
-            break;
-        case 'success':
-            statusEl.classList.add('bg-green-100', 'text-green-700');
-            break;
-        case 'loading':
-            statusEl.classList.add('bg-blue-100', 'text-blue-700');
-            statusEl.innerHTML = `${message} <span class="animate-pulse">...</span>`;
-            break;
-        default:
-            statusEl.classList.add('bg-blue-100', 'text-blue-700');
+// Detect user's current location
+async function detectLocation() {
+    if (!navigator.geolocation) {
+        showStatusMessage('Geolocation is not supported by your browser', 'error');
+        return;
     }
-    
-    statusEl.classList.remove('hidden');
-}
 
-// Detect User's Location
-function detectLocation() {
-    if (navigator.geolocation) {
-        showStatus('Detecting your location...', 'loading');
-        
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                // For demo purposes, we'll use a mock location based on coordinates
-                // In a real app, you would use reverse geocoding API
-                const mockLocations = {
-                    'North India': { minLat: 28, maxLat: 35, minLng: 75, maxLng: 85 },
-                    'South India': { minLat: 8, maxLat: 20, minLng: 72, maxLng: 85 },
-                    'East India': { minLat: 20, maxLat: 28, minLng: 85, maxLng: 95 },
-                    'West India': { minLat: 20, maxLat: 28, minLng: 68, maxLng: 75 },
-                    'Central India': { minLat: 20, maxLat: 28, minLng: 75, maxLng: 85 },
-                    'Kerala': { minLat: 8, maxLat: 13, minLng: 74, maxLng: 78 }
-                };
-                
-                const lat = position.coords.latitude;
-                const lng = position.coords.longitude;
-                
-                let detectedLocation = 'India'; // Default
-                
-                for (const [location, bounds] of Object.entries(mockLocations)) {
-                    if (lat >= bounds.minLat && lat <= bounds.maxLat && 
-                        lng >= bounds.minLng && lng <= bounds.maxLng) {
-                        detectedLocation = location;
-                        break;
-                    }
-                }
-                
-                locationInput.value = detectedLocation;
-                showStatus(`Location detected: ${detectedLocation}`, 'success', 2000);
-            },
-            (error) => {
-                console.error('Geolocation error:', error);
-                showStatus('Could not detect location. Please enter manually.', 'error');
-            }
-        );
-    } else {
-        showStatus('Geolocation is not supported by your browser. Please enter location manually.', 'error');
-    }
-}
+    try {
+        const position = await new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject);
+        });
 
-// Show Status Message
-function showStatus(message, type, duration = 3000) {
-    if (!statusMessage) return;
-    
-    // Set message and style based on type
-    statusMessage.textContent = message;
-    statusMessage.classList.remove('hidden', 'bg-green-100', 'text-green-800', 'bg-red-100', 'text-red-800', 'bg-blue-100', 'text-blue-800');
-    
-    switch (type) {
-        case 'success':
-            statusMessage.classList.add('bg-green-100', 'text-green-800');
-            break;
-        case 'error':
-            statusMessage.classList.add('bg-red-100', 'text-red-800');
-            break;
-        case 'loading':
-            statusMessage.classList.add('bg-blue-100', 'text-blue-800');
-            break;
-    }
-    
-    // Show the message
-    statusMessage.classList.remove('hidden');
-    
-    // Hide after duration if not loading
-    if (type !== 'loading') {
-        setTimeout(() => {
-            statusMessage.classList.add('hidden');
-        }, duration);
+        const { latitude, longitude } = position.coords;
+        locationInput.value = `${latitude}, ${longitude}`;
+        showStatusMessage('Location detected successfully!', 'success');
+    } catch (error) {
+        console.error('Error getting location:', error);
+        showStatusMessage('Failed to get your location. Please enter it manually.', 'error');
     }
 }

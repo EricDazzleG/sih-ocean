@@ -1,36 +1,22 @@
 // Register Page JavaScript
 
-// Debug: Log script loading
-console.log('Register script loaded');
+// Import auth functions
+import { signUp, showStatusMessage } from './auth.js';
 
-// Get Supabase instance from window
-const supabase = window.supabase;
+// DOM Elements
+const registerForm = document.getElementById('register-form');
+const detectLocationBtn = document.getElementById('detect-location');
+const locationInput = document.getElementById('location');
+const statusMessage = document.getElementById('status-message');
 
-if (!supabase) {
-    console.error('Supabase not found in window object');
-    document.body.innerHTML = `
-        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-            <strong class="font-bold">Error!</strong>
-            <span class="block sm:inline">Failed to initialize Supabase. Please refresh the page.</span>
-        </div>
-        ${document.body.innerHTML}
-    `;
-} else {
-    console.log('Supabase instance in register.js:', supabase);
-}
-
+// Initialize Register Page
 document.addEventListener('DOMContentLoaded', () => {
-    const registerForm = document.getElementById('register-form');
-    const statusMessage = document.getElementById('status-message');
-    const detectLocationBtn = document.getElementById('detect-location');
-    const locationInput = document.getElementById('location');
-
-    // Handle location detection
+    // Setup location detection
     if (detectLocationBtn && locationInput) {
         detectLocationBtn.addEventListener('click', detectUserLocation);
     }
 
-    // Handle form submission
+    // Setup form submission
     if (registerForm) {
         registerForm.addEventListener('submit', handleRegister);
     }
@@ -38,7 +24,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Detect user's current location
 async function detectUserLocation() {
-    const locationInput = document.getElementById('location');
     const statusMessage = document.getElementById('status-message');
     
     if (!navigator.geolocation) {
@@ -51,51 +36,21 @@ async function detectUserLocation() {
             navigator.geolocation.getCurrentPosition(resolve, reject);
         });
 
-        // Use reverse geocoding to get location name (simplified for demo)
         const { latitude, longitude } = position.coords;
-        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
-        const data = await response.json();
-        
-        if (data.display_name) {
-            locationInput.value = data.display_name.split(',').slice(0, 3).join(',');
-            showStatusMessage('Location detected successfully!', 'success');
-        } else {
-            showStatusMessage('Could not determine location name', 'warning');
-        }
+        locationInput.value = `${latitude}, ${longitude}`;
+        showStatusMessage('Location detected successfully!', 'success');
     } catch (error) {
         console.error('Error getting location:', error);
-        showStatusMessage('Error detecting location. Please enter manually.', 'error');
+        showStatusMessage('Failed to get your location. Please enter it manually.', 'error');
     }
-}
-
-// Show error message helper
-function showError(message) {
-    const statusEl = document.getElementById('status-message');
-    if (statusEl) {
-        statusEl.textContent = message;
-        statusEl.className = 'error';
-        statusEl.style.display = 'block';
-    }
-    console.error(message);
 }
 
 // Handle registration form submission
 async function handleRegister(event) {
     event.preventDefault();
     
-    if (!supabase) {
-        showError('Supabase client not available. Please refresh the page.');
-        return;
-    }
-    
-    console.log('Supabase in handleRegister:', supabase);
-    
-    try {
-    
     const form = event.target;
     const formData = new FormData(form);
-    
-    console.log('Form submitted');
     
     // Get form values
     const name = formData.get('name');
@@ -124,81 +79,30 @@ async function handleRegister(event) {
     submitBtn.innerHTML = 'Creating Account...';
     
     try {
-        console.log('Starting registration process...');
+        // Create user with Supabase Auth
+        const userData = {
+            name,
+            phone,
+            location,
+            user_type: userType
+        };
         
-        // 1. Create user in Supabase Auth
-        console.log('Calling supabase.auth.signUp with:', { email, password, name, phone, userType });
+        const { user, error } = await signUp(email, password, userData);
         
-        const { data: authData, error: authError } = await supabase.auth.signUp({
-            email,
-            password,
-            options: {
-                data: {
-                    name,
-                    phone,
-                    user_type: userType,
-                    location
-                },
-                emailRedirectTo: window.location.origin + '/login.html'
-            }
-        });
-        
-        console.log('Auth response:', { authData, authError });
-        
-        if (authError) {
-            console.error('Auth error details:', {
-                name: authError.name,
-                message: authError.message,
-                status: authError.status
-            });
-            throw authError;
-        }
-        
-        if (!authData.user) {
-            throw new Error('No user data returned from auth');
-        }
-        
-        console.log('User created successfully:', authData.user.id);
-        
-        // 2. Manually insert into profiles table (in case trigger didn't work)
-        console.log('Attempting to insert profile data...');
-        
-        const { data: profileData, error: profileError } = await supabase
-            .from('profiles')
-            .insert({
-                id: authData.user.id,
-                email,
-                name,
-                phone,
-                location,
-                user_type: userType
-            })
-            .select();
-            
-        console.log('Profile insert response:', { profileData, profileError });
-            
-        if (profileError) {
-            console.error('Profile insert error:', profileError);
-            // Try to continue even if profile insert fails, as the trigger might have worked
-            if (!profileError.message.includes('duplicate key')) {
-                throw profileError;
-            }
-        }
+        if (error) throw error;
         
         // Show success message
         const successMessage = 'Registration successful! ' + 
-            (authData.session ? 'You are now logged in.' : 'Please check your email to confirm your account.');
+            (user.confirmed_at ? 'You are now logged in.' : 'Please check your email to confirm your account.');
             
         showStatusMessage(successMessage, 'success');
         
-        console.log('Registration successful, auth data:', authData);
-        
-        // If user is already logged in, redirect to home, otherwise to login
-        if (authData.session) {
-            console.log('User is logged in, redirecting to home...');
+        // Redirect based on email confirmation status
+        if (user.confirmed_at) {
+            // If email is already confirmed, redirect to home
             window.location.href = 'index.html';
         } else {
-            console.log('Email confirmation required, redirecting to login...');
+            // Otherwise, redirect to login after a delay
             setTimeout(() => {
                 window.location.href = 'login.html';
             }, 3000);
@@ -210,7 +114,8 @@ async function handleRegister(event) {
         // More specific error messages
         let errorMessage = 'An error occurred during registration';
         
-        if (error.message.includes('already registered')) {
+        if (error.message.includes('already registered') || 
+            error.message.includes('already in use')) {
             errorMessage = 'This email is already registered. Please log in instead.';
         } else if (error.message.includes('password')) {
             errorMessage = 'Password must be at least 6 characters long';
@@ -229,24 +134,23 @@ async function handleRegister(event) {
     }
 }
 
-// Helper function to show status messages
+// Show status message helper function
 function showStatusMessage(message, type = 'info') {
-    const statusMessage = document.getElementById('status-message');
     if (!statusMessage) return;
     
-    // Clear previous classes and set new ones
-    statusMessage.className = 'mt-4 p-3 rounded-md';
-    statusMessage.classList.add(
-        type === 'error' ? 'bg-red-100 text-red-700' :
-        type === 'success' ? 'bg-green-100 text-green-700' :
-        'bg-blue-100 text-blue-700'
-    );
+    // Clear previous messages and classes
+    statusMessage.textContent = '';
+    statusMessage.className = 'status-message';
     
+    // Set message and add appropriate class
     statusMessage.textContent = message;
-    statusMessage.classList.remove('hidden');
+    statusMessage.classList.add(type);
+    statusMessage.style.display = 'block';
     
-    // Auto-hide after 5 seconds
-    setTimeout(() => {
-        statusMessage.classList.add('hidden');
-    }, 5000);
+    // Auto-hide after 5 seconds for non-error messages
+    if (type !== 'error') {
+        setTimeout(() => {
+            statusMessage.style.display = 'none';
+        }, 5000);
+    }
 }

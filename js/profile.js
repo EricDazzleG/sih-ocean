@@ -1,83 +1,204 @@
 // Profile Page JavaScript
 
-// Import from app.js
-import { supabase, getSession, clearSession } from './app.js';
+// Import auth functions
+import { getUser, signOut, updateUserData, showStatusMessage } from './auth.js';
 
 // DOM Elements
 const profileImage = document.getElementById('profile-image');
 const profileName = document.getElementById('profile-name');
-const profileLocation = document.getElementById('profile-location');
+const profileEmail = document.getElementById('profile-email');
 const profilePhone = document.getElementById('profile-phone');
+const profileLocation = document.getElementById('profile-location');
+const userTypeBadge = document.getElementById('user-type-badge');
 const reportsCount = document.getElementById('reports-count');
 const alertsCount = document.getElementById('alerts-count');
 const logoutButton = document.getElementById('logout-button');
+const editProfileButton = document.getElementById('edit-profile-button');
+const saveProfileButton = document.getElementById('save-profile-button');
+const editForm = document.getElementById('edit-profile-form');
 
 // Initialize Profile Page
-document.addEventListener('DOMContentLoaded', () => {
-    // Load User Profile
-    loadUserProfile();
-    
-    // Setup Logout Button
-    if (logoutButton) {
-        logoutButton.addEventListener('click', handleLogout);
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        // Load user profile
+        await loadUserProfile();
+        
+        // Setup event listeners
+        if (logoutButton) {
+            logoutButton.addEventListener('click', handleLogout);
+        }
+        
+        if (editProfileButton) {
+            editProfileButton.addEventListener('click', enableEditMode);
+        }
+        
+        if (saveProfileButton && editForm) {
+            editForm.addEventListener('submit', handleProfileUpdate);
+        }
+    } catch (error) {
+        console.error('Error initializing profile page:', error);
+        showStatusMessage('Failed to load profile. Please try again.', 'error');
     }
 });
 
-// Load User Profile
+// Load user profile
 async function loadUserProfile() {
-    const session = getSession();
-    
-    if (!session) {
-        // Redirect to login if no session
-        window.location.href = 'login.html';
-        return;
-    }
-    
-    const user = session.user;
-    
-    // Display user information
-    if (profileName) profileName.textContent = user.user_metadata.name;
-    if (profileLocation) profileLocation.textContent = `Location: ${user.user_metadata.location}`;
-    if (profilePhone) profilePhone.textContent = `Phone: ${user.user_metadata.phone}`;
-    
-    // Set profile image or initials
-    if (profileImage) {
-        const initials = user.user_metadata.name
-            .split(' ')
-            .map(name => name[0])
-            .join('')
-            .toUpperCase();
-        
-        profileImage.innerHTML = `<span>${initials}</span>`;
-    }
-    
-    // Fetch user statistics
     try {
+        const user = await getUser();
+        
+        if (!user) {
+            // Redirect to login if no user is found
+            window.location.href = 'login.html';
+            return;
+        }
+        
+        // Display user information
+        const userData = user.user_metadata || {};
+        
+        if (profileName) profileName.textContent = userData.name || 'N/A';
+        if (profileEmail) profileEmail.textContent = user.email || 'N/A';
+        if (profilePhone) profilePhone.textContent = userData.phone || 'N/A';
+        if (profileLocation) profileLocation.textContent = userData.location || 'N/A';
+        
+        // Set user type badge
+        if (userTypeBadge) {
+            const userType = userData.user_type || 'user';
+            userTypeBadge.textContent = userType.charAt(0).toUpperCase() + userType.slice(1);
+            userTypeBadge.className = `px-2 py-1 text-xs rounded-full ${
+                userType === 'admin' ? 'bg-purple-100 text-purple-800' : 
+                userType === 'researcher' ? 'bg-blue-100 text-blue-800' : 
+                'bg-gray-100 text-gray-800'
+            }`;
+        }
+        
+        // Set profile image or initials
+        if (profileImage) {
+            if (userData.avatar_url) {
+                profileImage.innerHTML = `<img src="${userData.avatar_url}" alt="Profile" class="w-full h-full object-cover rounded-full">`;
+            } else {
+                const initials = (userData.name || 'U')
+                    .split(' ')
+                    .map(name => name[0])
+                    .join('')
+                    .toUpperCase()
+                    .substring(0, 2);
+                
+                profileImage.innerHTML = `<span class="text-2xl font-semibold text-white">${initials}</span>`;
+                
+                // Set a random background color based on user's name
+                const colors = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-pink-500', 'bg-indigo-500'];
+                const colorIndex = (userData.name || '').split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
+                profileImage.className = `w-24 h-24 rounded-full flex items-center justify-center ${colors[colorIndex]} shadow-md`;
+            }
+        }
+        
+        // Load user statistics
+        await loadUserStatistics(user.id);
+        
+    } catch (error) {
+        console.error('Error loading user profile:', error);
+        showStatusMessage('Failed to load profile. Please try again.', 'error');
+    }
+}
+
+// Load user statistics
+async function loadUserStatistics(userId) {
+    try {
+        const supabase = window.supabase;
+        if (!supabase) throw new Error('Supabase client not available');
+        
         // Get reports count
         const { data: reports, error: reportsError } = await supabase
             .from('reports')
-            .select('id')
-            .eq('user_id', user.id);
+            .select('id', { count: 'exact' })
+            .eq('user_id', userId);
         
         if (!reportsError && reportsCount) {
-            reportsCount.textContent = reports.length;
+            reportsCount.textContent = reports.length || 0;
         }
         
-        // For demo purposes, set a random number of alerts
+        // Get alerts count (if applicable)
         if (alertsCount) {
+            // For demo purposes, we'll use a random number
+            // In a real app, you would fetch this from your database
             alertsCount.textContent = Math.floor(Math.random() * 5);
         }
         
     } catch (error) {
-        console.error('Error fetching user statistics:', error);
+        console.error('Error loading user statistics:', error);
     }
 }
 
-// Handle Logout
-function handleLogout() {
-    // Clear session
-    clearSession();
+// Enable edit mode
+function enableEditMode() {
+    if (!editForm) return;
     
-    // Redirect to login page
-    window.location.href = 'login.html';
+    // Populate form fields
+    const user = JSON.parse(localStorage.getItem('sb-user'))?.user;
+    const userData = user?.user_metadata || {};
+    
+    editForm.elements['name'].value = userData.name || '';
+    editForm.elements['phone'].value = userData.phone || '';
+    editForm.elements['location'].value = userData.location || '';
+    
+    // Toggle visibility
+    document.querySelectorAll('.view-mode').forEach(el => el.classList.add('hidden'));
+    document.querySelectorAll('.edit-mode').forEach(el => el.classList.remove('hidden'));
+}
+
+// Handle profile update
+async function handleProfileUpdate(event) {
+    event.preventDefault();
+    
+    const form = event.target;
+    const formData = new FormData(form);
+    
+    const updatedData = {
+        name: formData.get('name'),
+        phone: formData.get('phone'),
+        location: formData.get('location')
+    };
+    
+    // Show loading state
+    const saveButton = form.querySelector('button[type="submit"]');
+    const originalButtonText = saveButton.innerHTML;
+    saveButton.disabled = true;
+    saveButton.innerHTML = 'Saving...';
+    
+    try {
+        // Update user data in Supabase Auth
+        const { data, error } = await updateUserData(updatedData);
+        
+        if (error) throw error;
+        
+        // Update UI
+        if (profileName) profileName.textContent = updatedData.name || 'N/A';
+        if (profilePhone) profilePhone.textContent = updatedData.phone || 'N/A';
+        if (profileLocation) profileLocation.textContent = updatedData.location || 'N/A';
+        
+        // Toggle back to view mode
+        document.querySelectorAll('.view-mode').forEach(el => el.classList.remove('hidden'));
+        document.querySelectorAll('.edit-mode').forEach(el => el.classList.add('hidden'));
+        
+        showStatusMessage('Profile updated successfully!', 'success');
+        
+    } catch (error) {
+        console.error('Error updating profile:', error);
+        showStatusMessage('Failed to update profile. Please try again.', 'error');
+    } finally {
+        // Reset button state
+        saveButton.disabled = false;
+        saveButton.innerHTML = originalButtonText;
+    }
+}
+
+// Handle logout
+async function handleLogout() {
+    try {
+        await signOut();
+        window.location.href = 'login.html';
+    } catch (error) {
+        console.error('Error during logout:', error);
+        showStatusMessage('Failed to log out. Please try again.', 'error');
+    }
 }
