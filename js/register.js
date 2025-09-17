@@ -1,33 +1,18 @@
 // Register Page JavaScript
-
-// Import Supabase from CDN (fallback if module import fails)
-let supabase;
+import { getSupabase } from './auth.js';
 
 // Debug: Log script loading
 console.log('Register script loaded');
 
-// Try to get Supabase from window object first
-if (window.supabase) {
-    supabase = window.supabase;
-    console.log('Using window.supabase');
-} 
-// If not in window, try to import from app.js
-else {
-    try {
-        import('./app.js').then(module => {
-            if (module.supabase) {
-                supabase = module.supabase;
-                console.log('Using imported supabase from app.js');
-            }
-        }).catch(err => {
-            console.error('Failed to import app.js:', err);
-        });
-    } catch (err) {
-        console.error('Error importing app.js:', err);
-    }
+// Get Supabase instance
+let supabase;
+try {
+    supabase = getSupabase();
+    console.log('Supabase instance in register.js:', supabase);
+} catch (error) {
+    console.error('Failed to get Supabase instance:', error);
+    showError('Failed to initialize. Please refresh the page.');
 }
-
-console.log('Supabase instance:', supabase);
 
 document.addEventListener('DOMContentLoaded', () => {
     const registerForm = document.getElementById('register-form');
@@ -93,11 +78,17 @@ function showError(message) {
 async function handleRegister(event) {
     event.preventDefault();
     
-    // Check if Supabase is initialized
-    if (!supabase) {
-        showError('Error: Supabase client not initialized. Please refresh the page and try again.');
-        return;
-    }
+    try {
+        // Ensure we have a valid Supabase instance
+        if (!supabase) {
+            supabase = getSupabase();
+        }
+        
+        console.log('Supabase in handleRegister:', supabase);
+        
+        if (!supabase) {
+            throw new Error('Supabase client not initialized');
+        }
     
     const form = event.target;
     const formData = new FormData(form);
@@ -197,6 +188,8 @@ async function handleRegister(event) {
             (authData.session ? 'You are now logged in.' : 'Please check your email to confirm your account.');
             
         showStatusMessage(successMessage, 'success');
+        
+        console.log('Registration successful, auth data:', authData);
         
         // If user is already logged in, redirect to home, otherwise to login
         if (authData.session) {
