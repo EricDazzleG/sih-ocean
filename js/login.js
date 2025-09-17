@@ -1,7 +1,7 @@
 // Login Page JavaScript
 
 // Import auth functions
-import { signIn, signUp, getSession, showStatusMessage } from './auth.js';
+import { signIn, signUp, getSession } from './auth.js';
 
 // DOM Elements
 const loginForm = document.getElementById('login-form');
@@ -111,5 +111,22 @@ async function detectLocation() {
     } catch (error) {
         console.error('Error getting location:', error);
         showStatusMessage('Failed to get your location. Please enter it manually.', 'error');
+    }
+}
+
+// Local status message helper (kept here to avoid importing UI helpers from auth)
+function showStatusMessage(message, type = 'info') {
+    const el = document.getElementById('status-message');
+    if (!el) return;
+    el.textContent = message;
+    el.className = 'mt-4 p-3 rounded-md text-sm';
+    el.classList.remove('hidden');
+    // reset styles
+    el.classList.remove('bg-green-100','text-green-800','bg-red-100','text-red-800','bg-blue-100','text-blue-800');
+    if (type === 'success') el.classList.add('bg-green-100','text-green-800');
+    else if (type === 'error') el.classList.add('bg-red-100','text-red-800');
+    else el.classList.add('bg-blue-100','text-blue-800');
+    if (type !== 'error') {
+        setTimeout(() => el.classList.add('hidden'), 5000);
     }
 }
