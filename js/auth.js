@@ -60,10 +60,18 @@ export async function getUser() {
 // Auth helpers
 export async function signUp(email, password, userData) {
     const client = supabaseClient || await initSupabase();
+    const options = { data: userData };
+    // Only set redirect when running on http(s) origin; file:// origins are invalid
+    try {
+        const origin = window.location.origin || '';
+        if (origin.startsWith('http')) {
+            options.emailRedirectTo = `${origin}/login.html`;
+        }
+    } catch {}
     const { data, error } = await client.auth.signUp({
         email,
         password,
-        options: { data: userData, emailRedirectTo: `${window.location.origin}/login.html` }
+        options
     });
     if (error) throw error;
     return data;
