@@ -5,7 +5,18 @@ const SUPABASE_URL = 'https://uxculnxvfukuiczadoqz.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV4Y3Vsbnh2ZnVrdWljemFkb3F6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxMTc3OTEsImV4cCI6MjA3MzY5Mzc5MX0.YebX841KOKE2PP_DChIV70vHr3H4xTdHqxbDOx9C89M';
 
 // Initialize Supabase Client
-export const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+console.log('Initializing Supabase client...');
+let supabase;
+try {
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    console.log('Supabase client initialized successfully');
+} catch (error) {
+    console.error('Failed to initialize Supabase client:', error);
+    // Fallback to mock data if Supabase fails
+    window.useMockData = true;
+}
+
+export { supabase };
 
 // Session management
 export function setSession(session) {
@@ -48,23 +59,34 @@ const publicPages = ['login.html', 'index.html', ''];
 const currentPage = window.location.pathname.split('/').pop() || '';
 
 // Initialize App
-document.addEventListener('DOMContentLoaded', async () => {
-    // Check authentication status first
-    const isAuthRequired = !publicPages.includes(currentPage);
-    const isAuthenticated = await checkAuthStatus();
-    
-    if (isAuthRequired && !isAuthenticated) {
-        // Redirect to login if authentication is required but user is not authenticated
-        window.location.href = 'login.html';
-        return;
+async function initializeApp() {
+    try {
+        // Load Components
+        await loadHeader();
+        loadFooter();
+        loadSOSButton();
+        loadEmergencyNotifications();
+        
+        // Check authentication status
+        const isAuthRequired = !publicPages.includes(currentPage);
+        if (isAuthRequired) {
+            const isAuthenticated = await checkAuthStatus();
+            if (!isAuthenticated) {
+                window.location.href = 'login.html';
+                return;
+            }
+        }
+    } catch (error) {
+        console.error('Error initializing app:', error);
     }
-    
-    // Load Components
-    loadHeader();
-    loadFooter();
-    loadSOSButton();
-    loadEmergencyNotifications();
-});
+}
+
+// Start the app when DOM is loaded
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeApp);
+} else {
+    initializeApp();
+}
 
 // Toggle mobile menu
 function toggleMobileMenu() {
