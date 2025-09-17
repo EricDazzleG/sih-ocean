@@ -300,7 +300,8 @@ async function checkAuthStatus() {
         loadHeader();
     } else {
         // User is not authenticated
-        if (currentPath !== 'login.html' && !['', 'index.html'].includes(currentPath)) {
+        const publicPages = ['', 'index.html', 'login.html', 'register.html'];
+        if (!publicPages.includes(currentPath)) {
             // Redirect to login if trying to access protected page
             window.location.href = 'login.html';
             return;
