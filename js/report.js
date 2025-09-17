@@ -1,7 +1,7 @@
 // Report Page JavaScript
 
-// Import from app.js
-import { supabase, getSession } from './app.js';
+// Use auth helpers instead of app.js local session
+import { initSupabase, getSupabase, getSession } from './auth.js';
 
 // DOM Elements
 const reportForm = document.getElementById('report-form');
@@ -14,10 +14,16 @@ const previewContainer = document.getElementById('preview');
 const statusMessage = document.getElementById('status-message');
 
 // Initialize Report Page
-document.addEventListener('DOMContentLoaded', () => {
-    // Check Authentication
-    const session = getSession();
+document.addEventListener('DOMContentLoaded', async () => {
+    // Ensure Supabase is ready
+    await initSupabase();
+    const supabase = getSupabase();
+
+    // Check Authentication using Supabase Auth
+    const session = await getSession();
     if (!session) {
+        // Save intended destination so we can return after login (app.js also handles this)
+        try { localStorage.setItem('post_login_redirect', 'report.html'); } catch {}
         // Redirect to login if not authenticated
         window.location.href = 'login.html';
         return;
@@ -25,7 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Setup Form Submission
     if (reportForm) {
-        reportForm.addEventListener('submit', handleReportSubmission);
+        reportForm.addEventListener('submit', (e) => handleReportSubmission(e, supabase, session));
     }
     
     // Setup Detect Location Button
@@ -40,11 +46,9 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Handle Report Form Submission
-async function handleReportSubmission(event) {
+async function handleReportSubmission(event, supabase, session) {
     event.preventDefault();
     
-    // Get session
-    const session = getSession();
     if (!session) {
         showStatus('You must be logged in to submit a report.', 'error');
         return;
@@ -76,16 +80,12 @@ async function handleReportSubmission(event) {
             status: 'pending'
         };
         
-        // Upload media if provided
+        // Upload media if provided (placeholder for real upload)
         if (media) {
             const fileExt = media.name.split('.').pop();
             const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
             const filePath = `reports/${session.user.id}/${fileName}`;
-            
-            // For demo purposes, we'll skip the actual upload
-            // In a real app, you would use supabase.storage.from('bucket').upload()
-            
-            // Add media path to report data
+            // TODO: supabase.storage.from('reports').upload(filePath, media)
             reportData.media_url = filePath;
         }
         
@@ -102,7 +102,7 @@ async function handleReportSubmission(event) {
         
         // Reset form
         reportForm.reset();
-        previewContainer.classList.add('hidden');
+        if (previewContainer) previewContainer.classList.add('hidden');
         
         // Redirect to home page after short delay
         setTimeout(() => {
@@ -164,12 +164,12 @@ function handleMediaPreview(event) {
     const file = event.target.files[0];
     
     if (!file) {
-        previewContainer.classList.add('hidden');
+        if (previewContainer) previewContainer.classList.add('hidden');
         return;
     }
     
     // Show preview container
-    previewContainer.classList.remove('hidden');
+    if (previewContainer) previewContainer.classList.remove('hidden');
     
     // Check file type
     if (file.type.startsWith('image/')) {
@@ -192,7 +192,7 @@ function handleMediaPreview(event) {
         
     } else {
         // Unsupported file type
-        previewContainer.classList.add('hidden');
+        if (previewContainer) previewContainer.classList.add('hidden');
         showStatus('Unsupported file type. Please upload an image or video.', 'error');
     }
 }
