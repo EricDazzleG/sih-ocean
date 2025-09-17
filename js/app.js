@@ -1,12 +1,10 @@
 // Main Application JavaScript
 
-// Import Supabase client from auth.js
-import { getSupabase } from './auth.js';
+// Import Supabase helpers from auth.js
+import { initSupabase, getSupabase } from './auth.js';
 
-// Get Supabase client
-const supabase = getSupabase();
-
-export { supabase };
+// Live export of the Supabase client (assigned after init)
+export let supabase;
 
 // Session management
 export function setSession(session) {
@@ -26,9 +24,13 @@ const emergencyWarnings = {
 };
 
 // Initialize App
-document.addEventListener('DOMContentLoaded', () => {
-    // Load Components
-    loadHeader();
+document.addEventListener('DOMContentLoaded', async () => {
+    // Initialize Supabase once
+    await initSupabase();
+    supabase = getSupabase();
+
+    // Load Components (after supabase is ready)
+    await loadHeader();
     loadFooter();
     loadSOSButton();
     loadEmergencyNotifications();
