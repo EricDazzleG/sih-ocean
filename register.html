@@ -136,35 +136,26 @@
     <!-- Footer Component -->
     <footer id="footer-container"></footer>
 
-    <!-- Load auth utilities first -->
-    <script type="module" src="./js/auth.js"></script>
-    <script type="module">
-        import { initSupabase } from './js/auth.js';
+    <!-- Load Supabase first -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- Initialize Supabase -->
+    <script>
+        // Initialize Supabase client
+        const supabase = supabase.createClient(
+            'https://uxculnxvfukuiczadoqz.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV4Y3Vsbnh2ZnVrdWljemFkb3F6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxMTc3OTEsImV4cCI6MjA3MzY5Mzc5MX0.YebX841KOKE2PP_DChIV70vHr3H4xTdHqxbDOx9C89M'
+        );
         
-        // Initialize Supabase when the page loads
-        document.addEventListener('DOMContentLoaded', async () => {
-            try {
-                await initSupabase();
-                console.log('Supabase initialized successfully');
-                
-                // Now load the register script
-                const registerScript = document.createElement('script');
-                registerScript.type = 'module';
-                registerScript.src = './js/register.js';
-                document.body.appendChild(registerScript);
-            } catch (error) {
-                console.error('Failed to initialize Supabase:', error);
-                const errorDiv = document.createElement('div');
-                errorDiv.className = 'bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative';
-                errorDiv.role = 'alert';
-                errorDiv.innerHTML = `
-                    <strong class="font-bold">Error!</strong>
-                    <span class="block sm:inline">Failed to initialize the application. Please refresh the page.</span>
-                    <span class="block sm:inline">${error.message}</span>
-                `;
-                document.body.prepend(errorDiv);
-            }
-        });
+        // Make it globally available
+        window.supabase = supabase;
+        console.log('Supabase initialized in register.html');
+        
+        // Load the register script
+        const registerScript = document.createElement('script');
+        registerScript.type = 'module';
+        registerScript.src = './js/register.js';
+        document.body.appendChild(registerScript);
     </script>
 </body>
 </html>

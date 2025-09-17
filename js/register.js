@@ -1,17 +1,22 @@
 // Register Page JavaScript
-import { getSupabase } from './auth.js';
 
 // Debug: Log script loading
 console.log('Register script loaded');
 
-// Get Supabase instance
-let supabase;
-try {
-    supabase = getSupabase();
+// Get Supabase instance from window
+const supabase = window.supabase;
+
+if (!supabase) {
+    console.error('Supabase not found in window object');
+    document.body.innerHTML = `
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+            <strong class="font-bold">Error!</strong>
+            <span class="block sm:inline">Failed to initialize Supabase. Please refresh the page.</span>
+        </div>
+        ${document.body.innerHTML}
+    `;
+} else {
     console.log('Supabase instance in register.js:', supabase);
-} catch (error) {
-    console.error('Failed to get Supabase instance:', error);
-    showError('Failed to initialize. Please refresh the page.');
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -78,17 +83,14 @@ function showError(message) {
 async function handleRegister(event) {
     event.preventDefault();
     
+    if (!supabase) {
+        showError('Supabase client not available. Please refresh the page.');
+        return;
+    }
+    
+    console.log('Supabase in handleRegister:', supabase);
+    
     try {
-        // Ensure we have a valid Supabase instance
-        if (!supabase) {
-            supabase = getSupabase();
-        }
-        
-        console.log('Supabase in handleRegister:', supabase);
-        
-        if (!supabase) {
-            throw new Error('Supabase client not initialized');
-        }
     
     const form = event.target;
     const formData = new FormData(form);
