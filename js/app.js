@@ -280,8 +280,14 @@ function loadEmergencyNotifications() {
 // Check Authentication Status
 async function checkAuthStatus() {
     const { data: { session } } = await supabase.auth.getSession();
-    const currentPath = window.location.pathname.split('/').pop();
-    
+    const currentPathRaw = window.location.pathname.split('/').pop() || '';
+    const currentPath = currentPathRaw.toLowerCase();
+
+    // Detect public page by path or DOM markers
+    const publicPaths = new Set(['', 'index.html', 'login.html', 'register.html']);
+    const isRegisterDom = !!document.getElementById('register-form');
+    const isPublicPage = publicPaths.has(currentPath) || isRegisterDom;
+
     if (session) {
         // User is authenticated
         if (currentPath === 'login.html' || currentPath === '') {
@@ -300,8 +306,7 @@ async function checkAuthStatus() {
         loadHeader();
     } else {
         // User is not authenticated
-        const publicPages = ['', 'index.html', 'login.html', 'register.html'];
-        if (!publicPages.includes(currentPath)) {
+        if (!isPublicPage) {
             // Redirect to login if trying to access protected page
             window.location.href = 'login.html';
             return;
