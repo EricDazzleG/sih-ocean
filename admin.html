@@ -76,14 +76,6 @@
     <section class="grid grid-cols-1 md:grid-cols-12 gap-6">
       <!-- Left: Reports (~60%) -->
       <div class="md:col-span-7">
-        <!-- Toolbar above reports -->
-        <div class="mb-3 flex items-center justify-between">
-          <button id="btn-heatmap" class="inline-flex items-center gap-2 px-3 py-2 rounded bg-primary text-white text-sm shadow hover:bg-opacity-90">
-            <!-- icon -->
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M3 5h18v2H3V5zm0 6h18v2H3v-2zm0 6h18v2H3v-2z"/></svg>
-            Heatmap (Coming Soon)
-          </button>
-        </div>
         <section class="bg-white rounded-lg shadow">
           <div class="p-4 border-b">
             <h2 class="font-semibold text-gray-700">Incoming Reports</h2>
@@ -109,23 +101,29 @@
         </section>
       </div>
 
-      <!-- Right: Charts (~40%), stacked -->
-      <div class="md:col-span-5 flex flex-col gap-4">
-        <!-- Full-width first chart -->
+      <!-- Right: 2x2 grid (~40%) -->
+      <div class="md:col-span-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <!-- Top-left: Status chart -->
         <div class="bg-white rounded-lg shadow p-3">
           <h2 class="font-semibold text-gray-700 mb-2">Reports by Status</h2>
-          <canvas id="chart-status" height="140"></canvas>
+          <canvas id="chart-status" height="120"></canvas>
         </div>
-        <!-- Two charts side-by-side -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div class="bg-white rounded-lg shadow p-3">
-            <h2 class="font-semibold text-gray-700 mb-2">Reports by Tag</h2>
-            <canvas id="chart-tag" height="130"></canvas>
-          </div>
-          <div class="bg-white rounded-lg shadow p-3">
-            <h2 class="font-semibold text-gray-700 mb-2">Last 30 Days</h2>
-            <canvas id="chart-time" height="130"></canvas>
-          </div>
+        <!-- Top-right: Heatmap button card -->
+        <div class="bg-white rounded-lg shadow p-3 flex items-center justify-center">
+          <button id="btn-heatmap" class="inline-flex items-center gap-2 px-4 py-3 rounded bg-primary text-white text-sm shadow hover:bg-opacity-90">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M3 5h18v2H3V5zm0 6h18v2H3v-2zm0 6h18v2H3v-2z"/></svg>
+            Heatmap (Coming Soon)
+          </button>
+        </div>
+        <!-- Bottom-left: Tag chart -->
+        <div class="bg-white rounded-lg shadow p-3">
+          <h2 class="font-semibold text-gray-700 mb-2">Reports by Tag</h2>
+          <canvas id="chart-tag" height="120"></canvas>
+        </div>
+        <!-- Bottom-right: Time chart -->
+        <div class="bg-white rounded-lg shadow p-3">
+          <h2 class="font-semibold text-gray-700 mb-2">Last 30 Days</h2>
+          <canvas id="chart-time" height="120"></canvas>
         </div>
       </div>
     </section>
