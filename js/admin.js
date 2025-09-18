@@ -55,7 +55,8 @@ async function loadAndRender() {
     showStatus(`${reports.length} reports loaded`, 'success', 1500);
   } catch (e) {
     console.error(e);
-    showStatus('Failed to load reports', 'error');
+    const msg = e?.message || e?.error_description || 'Failed to load reports';
+    showStatus(`Failed to load reports: ${msg}`, 'error');
   }
 }
 
