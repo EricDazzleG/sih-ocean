@@ -86,6 +86,7 @@ function closeMobileMenuOnLinkClick() {
 async function loadHeader() {
     const { data: { user } } = await supabase.auth.getUser();
     const userData = user?.user_metadata || {};
+    const isAdmin = ['admin', 'authority'].includes((userData?.user_type || '').toLowerCase());
     
     headerContainer.innerHTML = `
         <header class="site-header">
@@ -102,6 +103,7 @@ async function loadHeader() {
                     <a href="profile.html" class="text-gray-700 hover:text-primary">Profile</a>
                     <a href="location.html" class="text-gray-700 hover:text-primary">Location</a>
                     <a href="report.html" class="text-gray-700 hover:text-primary">Report</a>
+                    ${isAdmin ? `<a href="admin.html" class="text-gray-700 hover:text-primary">Admin</a>` : ''}
                     
                     ${user ? `
                         <div class="user-profile">
@@ -145,6 +147,7 @@ async function loadHeader() {
                             <a href="profile.html" class="text-gray-700 hover:text-primary py-2">Profile</a>
                             <a href="location.html" class="text-gray-700 hover:text-primary py-2">Location</a>
                             <a href="report.html" class="text-gray-700 hover:text-primary py-2">Report</a>
+                            ${isAdmin ? `<a href="admin.html" class="text-gray-700 hover:text-primary py-2">Admin</a>` : ''}
                             
                             ${user ? `
                                 <div class="mt-auto pt-4 border-t border-gray-200">
