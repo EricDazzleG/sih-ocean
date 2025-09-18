@@ -4,6 +4,7 @@ import { initSupabase, getSupabase, getUser } from './auth.js';
 
 let supabase;
 let charts = { status: null, tag: null, time: null };
+const STORAGE_BUCKET = 'reports'; // adjust if your bucket name differs
 
 // DOM
 const tbody = document.getElementById('reports-tbody');
@@ -34,6 +35,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Load data
   bindFilters();
   await loadAndRender();
+  ensurePreviewModal();
 });
 
 function bindFilters() {
@@ -69,7 +71,14 @@ async function fetchReports() {
 
   const { data, error } = await query;
   if (error) throw error;
-  return (data || []).map(normalizeReport);
+  const normalized = (data || []).map(normalizeReport);
+  // Resolve storage paths to public/signed URLs for previewing
+  const withResolved = await Promise.all(normalized.map(async (r) => {
+    if (!r.media_url) return { ...r, media_display_url: null };
+    const resolved = await resolveMediaUrl(r.media_url);
+    return { ...r, media_display_url: resolved };
+  }));
+  return withResolved;
 }
 
 // Normalize report fields to handle schema variations
@@ -99,7 +108,7 @@ function renderTable(reports) {
     return `
       <tr class="border-b align-top">
         <td class="px-4 py-3">
-          ${renderMediaThumb(r.media_url)}
+          ${renderMediaThumb(r.media_display_url || r.media_url)}
         </td>
         <td class="px-4 py-3 max-w-sm">
           <div class="text-gray-800">${escapeHtml(r.message)}</div>
@@ -128,15 +137,28 @@ function renderTable(reports) {
       await handleAction(action, id);
     });
   });
+
+  // Bind media preview
+  tbody.querySelectorAll('[data-preview-url]')?.forEach(el => {
+    el.addEventListener('click', () => {
+      const url = el.getAttribute('data-preview-url');
+      const type = el.getAttribute('data-preview-type') || 'image';
+      openPreview(url, type);
+    });
+  });
 }
 
 function renderMediaThumb(url) {
   if (!url) return '<div class="w-24 h-16 bg-gray-100 flex items-center justify-center text-xs text-gray-500">No media</div>';
   const lower = String(url).toLowerCase();
   if (lower.match(/\.(mp4|webm|ogg)$/)) {
-    return `<video class="w-24 h-16 object-cover rounded" src="${encodeURI(url)}" controls muted></video>`;
+    return `<button type="button" class="group" data-preview-url="${encodeURI(url)}" data-preview-type="video" title="Open preview">
+      <video class="w-24 h-16 object-cover rounded pointer-events-none" src="${encodeURI(url)}" muted></video>
+    </button>`;
   }
-  return `<img class="w-24 h-16 object-cover rounded" src="${encodeURI(url)}" alt="media" onerror="this.src='';this.outerHTML='<div class=\'w-24 h-16 bg-gray-100 flex items-center justify-center text-xs text-gray-500\'>No media</div>'" />`;
+  return `<button type="button" class="group" data-preview-url="${encodeURI(url)}" data-preview-type="image" title="Open preview">
+    <img class="w-24 h-16 object-cover rounded pointer-events-none" src="${encodeURI(url)}" alt="media" onerror="this.src='';this.outerHTML='<div class=\'w-24 h-16 bg-gray-100 flex items-center justify-center text-xs text-gray-500\'>No media</div>'" />
+  </button>`;
 }
 
 function badgeTag(tag) {
@@ -284,4 +306,57 @@ function showStatus(text, type = 'info', duration = 3000) {
   const cls = (map[type] || map.info).split(' ').filter(Boolean);
   statusBox.classList.add(...cls);
   if (type !== 'loading') setTimeout(() => statusBox.classList.add('hidden'), duration);
+}
+
+// Resolve a storage path (e.g., reports/uid/file.jpg) to a usable URL
+async function resolveMediaUrl(pathOrUrl) {
+  // If already an absolute URL, return as is
+  if (/^https?:\/\//i.test(pathOrUrl)) return pathOrUrl;
+  try {
+    // Try public URL first
+    const { data } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(pathOrUrl);
+    if (data?.publicUrl) return data.publicUrl;
+  } catch {}
+  try {
+    // Fallback to signed URL
+    const { data, error } = await supabase.storage.from(STORAGE_BUCKET).createSignedUrl(pathOrUrl, 60 * 60);
+    if (!error && data?.signedUrl) return data.signedUrl;
+  } catch {}
+  return pathOrUrl; // fallback
+}
+
+// Preview modal helpers
+function ensurePreviewModal() {
+  if (document.getElementById('admin-preview-modal')) return;
+  const div = document.createElement('div');
+  div.id = 'admin-preview-modal';
+  div.className = 'fixed inset-0 z-50 hidden';
+  div.innerHTML = `
+    <div class="absolute inset-0 bg-black bg-opacity-60" data-close></div>
+    <div class="absolute inset-0 flex items-center justify-center p-4">
+      <div class="bg-white rounded-lg shadow max-w-3xl w-full overflow-hidden">
+        <div class="p-2 border-b flex justify-between items-center">
+          <span class="text-sm text-gray-600">Media preview</span>
+          <button class="px-2 py-1 text-sm" data-close>&times;</button>
+        </div>
+        <div class="p-2" id="admin-preview-body"></div>
+      </div>
+    </div>`;
+  document.body.appendChild(div);
+  div.addEventListener('click', (e) => { if (e.target.hasAttribute('data-close')) hidePreview(); });
+}
+
+function openPreview(url, type) {
+  const modal = document.getElementById('admin-preview-modal');
+  const body = document.getElementById('admin-preview-body');
+  if (!modal || !body) return;
+  body.innerHTML = type === 'video'
+    ? `<video src="${encodeURI(url)}" class="w-full h-[60vh] object-contain" controls autoplay></video>`
+    : `<img src="${encodeURI(url)}" class="w-full h-[60vh] object-contain" alt="preview" />`;
+  modal.classList.remove('hidden');
+}
+
+function hidePreview() {
+  const modal = document.getElementById('admin-preview-modal');
+  if (modal) modal.classList.add('hidden');
 }
