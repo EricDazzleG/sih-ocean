@@ -35,7 +35,9 @@ async function loadReportsFeed() {
             'Flooding.Cuttak,Odisha.jpg',
             'Heavy winds.Balasore,Odisha.jpg',
             'Road collapsed during.cuttak,Odisha.jpg',
-            'Tree blocking road.Puri,Odisha.jpg'
+            'Tree blocking road.Puri,Odisha.jpg',
+            'massive floods.Kendrapra,Odisha.jpg',
+            'road closure.kendrapra,Odisha.jpg'
         ];
 
         // Parse filenames into cards
@@ -44,11 +46,17 @@ async function loadReportsFeed() {
             const withoutExt = file.replace(/\.[^.]+$/, '');
             // Split on the last dot to separate title and location (Title.Location)
             const lastDot = withoutExt.lastIndexOf('.');
-            const title = lastDot > -1 ? withoutExt.slice(0, lastDot) : withoutExt;
-            const location = lastDot > -1 ? withoutExt.slice(lastDot + 1) : 'Unknown';
+            const rawTitle = lastDot > -1 ? withoutExt.slice(0, lastDot) : withoutExt;
+            const rawLocation = lastDot > -1 ? withoutExt.slice(lastDot + 1) : 'Unknown';
+
+            const title = toTitleCase(rawTitle.replace(/[_-]+/g, ' '));
+            const location = rawLocation
+                .split(',')
+                .map(part => toTitleCase(part.trim()))
+                .join(', ');
 
             // Basic tag inference from title keywords
-            const t = title.toLowerCase();
+            const t = rawTitle.toLowerCase();
             let tag = 'misc';
             if (t.includes('flood') || t.includes('cyclone') || t.includes('wind')) tag = 'hazard';
             else if (t.includes('road') || t.includes('bridge') || t.includes('tree')) tag = 'infrastructure';
@@ -112,7 +120,7 @@ async function loadReportsFeed() {
                     <img src="${report.src}" alt="${report.title}" class="w-full h-48 object-cover" onerror="this.style.display='none'" />
                     <div class="p-4">
                         <div class="flex justify-between items-start mb-2">
-                            <div class="flex items-center">
+                            <div class="flex items-center gap-2">
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${tagColor}">
                                     ${tagIcon}
                                     ${report.tag.charAt(0).toUpperCase() + report.tag.slice(1)}
@@ -145,4 +153,14 @@ async function loadReportsFeed() {
             </div>
         `;
     }
+}
+
+// Helpers
+function toTitleCase(str) {
+    return String(str)
+      .toLowerCase()
+      .split(' ')
+      .filter(Boolean)
+      .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ');
 }
