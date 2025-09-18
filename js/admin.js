@@ -281,6 +281,7 @@ function showStatus(text, type = 'info', duration = 3000) {
   statusBox.classList.remove('hidden');
   statusBox.className = 'p-4 text-sm rounded';
   const map = { success: 'bg-green-50 text-green-800', error: 'bg-red-50 text-red-800', loading: 'bg-blue-50 text-blue-800', info: 'bg-gray-50 text-gray-800' };
-  statusBox.classList.add(map[type] || map.info);
+  const cls = (map[type] || map.info).split(' ').filter(Boolean);
+  statusBox.classList.add(...cls);
   if (type !== 'loading') setTimeout(() => statusBox.classList.add('hidden'), duration);
 }
