@@ -10,12 +10,12 @@ const STORAGE_BUCKET = 'reports'; // adjust if your bucket name differs
 const tbody = document.getElementById('reports-tbody');
 const adminPill = document.getElementById('admin-user-pill');
 const statusBox = document.getElementById('admin-status');
-
 const filterStatus = document.getElementById('filter-status');
 const filterTag = document.getElementById('filter-tag');
 const filterLocation = document.getElementById('filter-location');
 const btnApply = document.getElementById('btn-apply-filters');
 const btnClear = document.getElementById('btn-clear-filters');
+const btnHeatmap = document.getElementById('btn-heatmap');
 
 // Init
 document.addEventListener('DOMContentLoaded', async () => {
@@ -36,6 +36,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   bindFilters();
   await loadAndRender();
   ensurePreviewModal();
+  bindHeatmap();
 });
 
 function bindFilters() {
@@ -378,4 +379,47 @@ function openPreview(url, type) {
 function hidePreview() {
   const modal = document.getElementById('admin-preview-modal');
   if (modal) modal.classList.add('hidden');
+}
+
+function bindHeatmap() {
+  if (!btnHeatmap) return;
+  const URL = 'https://incois.gov.in/OON/index.jsp';
+  btnHeatmap.addEventListener('click', (e) => {
+    e.preventDefault();
+    // Try popup window first
+    const w = window.open(URL, 'incois_heatmap', 'width=1200,height=800,noopener,noreferrer');
+    if (!w || w.closed || typeof w.closed === 'undefined') {
+      // Popup blocked – fallback to in-page modal with iframe
+      showHeatmapModal(URL);
+    }
+  });
+}
+
+function showHeatmapModal(url) {
+  const id = 'heatmap-modal';
+  let modal = document.getElementById(id);
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = id;
+    modal.className = 'fixed inset-0 z-50 hidden';
+    modal.innerHTML = `
+      <div class="absolute inset-0 bg-black bg-opacity-60" data-close></div>
+      <div class="absolute inset-0 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow max-w-6xl w-full h-[80vh] overflow-hidden">
+          <div class="p-2 border-b flex justify-between items-center">
+            <span class="text-sm text-gray-600">INCOIS OON Heatmap</span>
+            <div class="space-x-2">
+              <a href="${url}" target="_blank" rel="noopener noreferrer" class="text-sm underline">Open in new tab</a>
+              <button class="px-2 py-1 text-sm" data-close>&times;</button>
+            </div>
+          </div>
+          <iframe id="heatmap-iframe" src="" class="w-full h-full border-0"></iframe>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+    modal.addEventListener('click', (e) => { if (e.target.hasAttribute('data-close')) modal.classList.add('hidden'); });
+  }
+  const frame = modal.querySelector('#heatmap-iframe');
+  if (frame) frame.src = url;
+  modal.classList.remove('hidden');
 }
