@@ -3,6 +3,9 @@
 // Use auth helpers instead of app.js local session
 import { initSupabase, getSupabase, getSession } from './auth.js';
 
+// Storage bucket name for report media
+const STORAGE_BUCKET = 'reports';
+
 // DOM Elements
 const reportForm = document.getElementById('report-form');
 const detectLocationBtn = document.getElementById('detect-location');
@@ -80,13 +83,35 @@ async function handleReportSubmission(event, supabase, session) {
             status: 'pending'
         };
         
-        // Upload media if provided (placeholder for real upload)
+        // Upload media if provided
         if (media) {
-            const fileExt = media.name.split('.').pop();
-            const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
-            const filePath = `reports/${session.user.id}/${fileName}`;
-            // TODO: supabase.storage.from('reports').upload(filePath, media)
-            reportData.media_url = filePath;
+            // Optional: basic size/type guard (example: max ~25MB)
+            const MAX_BYTES = 25 * 1024 * 1024;
+            if (media.size > MAX_BYTES) {
+                throw new Error('File is too large. Please upload a file under 25MB.');
+            }
+
+            const fileExt = (media.name.split('.').pop() || 'bin').toLowerCase();
+            const safeBase = media.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+            const fileName = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${safeBase}`;
+            const filePath = `${session.user.id}/${fileName}`; // path inside bucket
+
+            const { data: uploadData, error: uploadError } = await supabase
+                .storage
+                .from(STORAGE_BUCKET)
+                .upload(filePath, media, {
+                    cacheControl: '3600',
+                    upsert: false,
+                    contentType: media.type || undefined
+                });
+            
+            if (uploadError) {
+                console.error('Upload error:', uploadError);
+                throw new Error('Failed to upload file. Please try again.');
+            }
+
+            // Save the storage path (not full URL); admin will resolve to public/signed URL
+            reportData.media_url = uploadData?.path || filePath;
         }
         
         // Submit report to Supabase
@@ -111,7 +136,7 @@ async function handleReportSubmission(event, supabase, session) {
         
     } catch (error) {
         console.error('Error submitting report:', error);
-        showStatus('An error occurred. Please try again.', 'error');
+        showStatus(error.message || 'An error occurred. Please try again.', 'error');
     }
 }
 
