@@ -132,6 +132,9 @@ async function loadReportsFeed() {
                 case 'verified':
                     statusBadge = `<span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">Verified</span>`;
                     break;
+                case 'rejected':
+                    statusBadge = `<span class="px-2 py-1 text-xs rounded-full bg-red-100 text-red-800">Rejected</span>`;
+                    break;
                 case 'resolved':
                     statusBadge = `<span class="px-2 py-1 text-xs rounded-full bg-accent bg-opacity-20 text-accent">Resolved</span>`;
                     break;
