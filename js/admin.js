@@ -189,23 +189,53 @@ function badgeStatus(status) {
 }
 
 function actionButtons(r) {
-  return `
-    <button class="px-2 py-1 text-xs rounded border" data-action="verify" data-id="${r.id}">Verify</button>
-    <button class="px-2 py-1 text-xs rounded border" data-action="reject" data-id="${r.id}">Reject</button>
-    <button class="px-2 py-1 text-xs rounded border" data-action="resolve" data-id="${r.id}">Resolve</button>
-  `;
+  const id = r.id;
+  const btn = (label, action, cls = 'bg-gray-100 text-gray-800') =>
+    `<button data-action="${action}" data-id="${id}" class="px-3 py-1 rounded ${cls}">${label}</button>`;
+ 
+  const buttons = [];
+  // Verify/Reject/Resolve as before
+  if (r.status !== 'verified') buttons.push(btn('Verify', 'verify', 'bg-green-100 text-green-800'));
+  if (r.status !== 'rejected') buttons.push(btn('Reject', 'reject', 'bg-red-100 text-red-800'));
+  if (r.status !== 'resolved') buttons.push(btn('Resolve', 'resolve', 'bg-blue-100 text-blue-800'));
+ 
+  // Delete appears only for rejected reports
+  if (r.status === 'rejected') {
+    buttons.push(btn('Delete', 'delete', 'bg-gray-200 text-gray-700'));
+  }
+ 
+  return buttons.join(' ');
 }
 
 async function handleAction(action, id) {
   try {
-    const status = action === 'verify' ? 'verified' : action === 'reject' ? 'rejected' : 'resolved';
-    const { error } = await supabase.from('reports').update({ status }).eq('id', id);
-    if (error) throw error;
-    showStatus(`Report ${action}d`, 'success', 1200);
-    await loadAndRender();
+    showStatus(`${capitalize(action)} in progress...`, 'loading');
+    if (action === 'verify' || action === 'reject' || action === 'resolve') {
+      const newStatus = action === 'verify' ? 'verified' : action === 'reject' ? 'rejected' : 'resolved';
+      const { error } = await supabase.from('reports').update({ status: newStatus }).eq('id', id);
+      if (error) throw error;
+      showStatus(`Report ${newStatus}.`, 'success', 1500);
+      await loadAndRender();
+    } else if (action === 'delete') {
+      // Confirm and delete only if currently rejected (client-side guard)
+      const row = tbody.querySelector(`[data-id='${id}']`);
+      // Fetch latest status to be safe
+      const { data, error } = await supabase.from('reports').select('status').eq('id', id).single();
+      if (error) throw error;
+      if ((data?.status || '').toLowerCase() !== 'rejected') {
+        showStatus('Only rejected reports can be deleted.', 'error');
+        return;
+      }
+      const confirmed = window.confirm('Delete this rejected report permanently?');
+      if (!confirmed) { showStatus('Delete cancelled', 'info', 1200); return; }
+      const del = await supabase.from('reports').delete().eq('id', id);
+      if (del.error) throw del.error;
+      showStatus('Report deleted.', 'success', 1500);
+      await loadAndRender();
+    }
   } catch (e) {
     console.error(e);
-    showStatus('Action failed', 'error');
+    showStatus(e.message || 'Action failed', 'error');
   }
 }
 
