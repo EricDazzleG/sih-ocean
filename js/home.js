@@ -34,7 +34,7 @@ async function loadReportsFeed() {
         const imageFiles = [
             'Flooding.Cuttak,Odisha.jpg',
             'Heavy winds.Balasore,Odisha.jpg',
-            'Road collapsed during.cuttak,Odisha.jpg',
+            'Road collapsed during flood.cuttak,Odisha.jpg',
             'Tree blocking road.Puri,Odisha.jpg',
             'massive floods.Kendrapra,Odisha.jpg',
             'road closure.kendrapra,Odisha.jpg'
