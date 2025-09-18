@@ -76,6 +76,9 @@ async function fetchReports() {
   const withResolved = await Promise.all(normalized.map(async (r) => {
     if (!r.media_url) return { ...r, media_display_url: null };
     const resolved = await resolveMediaUrl(r.media_url);
+    if (!resolved) {
+      console.warn('Unable to resolve media_url for report', r.id, r.media_url);
+    }
     return { ...r, media_display_url: resolved };
   }));
   return withResolved;
@@ -151,7 +154,7 @@ function renderTable(reports) {
 function renderMediaThumb(url) {
   if (!url) return '<div class="w-24 h-16 bg-gray-100 flex items-center justify-center text-xs text-gray-500">No media</div>';
   const lower = String(url).toLowerCase();
-  if (lower.match(/\.(mp4|webm|ogg)$/)) {
+  if (lower.match(/\.(mp4|webm|ogg)$/) || lower.startsWith('data:video')) {
     return `<button type="button" class="group" data-preview-url="${encodeURI(url)}" data-preview-type="video" title="Open preview">
       <video class="w-24 h-16 object-cover rounded pointer-events-none" src="${encodeURI(url)}" muted></video>
     </button>`;
@@ -310,19 +313,21 @@ function showStatus(text, type = 'info', duration = 3000) {
 
 // Resolve a storage path (e.g., reports/uid/file.jpg) to a usable URL
 async function resolveMediaUrl(pathOrUrl) {
-  // If already an absolute URL, return as is
-  if (/^https?:\/\//i.test(pathOrUrl)) return pathOrUrl;
+  // Already an absolute or data URL
+  if (/^https?:\/\//i.test(pathOrUrl) || /^data:/i.test(pathOrUrl)) return pathOrUrl;
   try {
-    // Try public URL first
     const { data } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(pathOrUrl);
     if (data?.publicUrl) return data.publicUrl;
-  } catch {}
+  } catch (e) {
+    console.warn('Public URL resolution failed', e);
+  }
   try {
-    // Fallback to signed URL
     const { data, error } = await supabase.storage.from(STORAGE_BUCKET).createSignedUrl(pathOrUrl, 60 * 60);
     if (!error && data?.signedUrl) return data.signedUrl;
-  } catch {}
-  return pathOrUrl; // fallback
+  } catch (e) {
+    console.warn('Signed URL resolution failed', e);
+  }
+  return null; // signal unresolved
 }
 
 // Preview modal helpers
@@ -350,10 +355,24 @@ function openPreview(url, type) {
   const modal = document.getElementById('admin-preview-modal');
   const body = document.getElementById('admin-preview-body');
   if (!modal || !body) return;
+  if (!url) {
+    body.innerHTML = `<div class="p-6 text-sm text-gray-600">No media available for preview.</div>`;
+    modal.classList.remove('hidden');
+    return;
+  }
   body.innerHTML = type === 'video'
-    ? `<video src="${encodeURI(url)}" class="w-full h-[60vh] object-contain" controls autoplay></video>`
-    : `<img src="${encodeURI(url)}" class="w-full h-[60vh] object-contain" alt="preview" />`;
+    ? `<video id="admin-preview-el" src="${encodeURI(url)}" class="w-full h-[60vh] object-contain" controls autoplay></video>`
+    : `<img id="admin-preview-el" src="${encodeURI(url)}" class="w-full h-[60vh] object-contain" alt="preview" />`;
   modal.classList.remove('hidden');
+  const el = document.getElementById('admin-preview-el');
+  if (el) {
+    el.addEventListener('error', () => {
+      body.innerHTML = `<div class="p-6 text-sm text-gray-600">
+        Preview unavailable. Source: <code class="break-all">${escapeHtml(url)}</code>
+        <div class="mt-2">Check if the file exists in the storage bucket "${STORAGE_BUCKET}" and that the path is correct.</div>
+      </div>`;
+    }, { once: true });
+  }
 }
 
 function hidePreview() {
