@@ -233,7 +233,7 @@ function loadFooter() {
                     <div class="mb-6 md:mb-0">
                         <div class="flex items-center">
                             <img src="./assets/incois-logo-white.svg" alt="INCOIS Logo" class="h-10">
-                            <span class="ml-3 text-xl font-bold">INCOIS</span>
+                            <span id="easter-egg" class="ml-3 text-xl font-bold cursor-pointer hover:underline" title="Click me!">INCOIS</span>
                         </div>
                         <p class="mt-2 text-sm max-w-md">Indian National Centre for Ocean Information Services - Providing ocean information and advisory services to society.</p>
                     </div>
@@ -251,6 +251,15 @@ function loadFooter() {
             </div>
         </footer>
     `;
+
+    // Add Easter egg click handler
+    const easterEgg = document.getElementById('easter-egg');
+    if (easterEgg) {
+        easterEgg.addEventListener('click', (e) => {
+            e.preventDefault();
+            window.open('easter-egg.html', '_blank', 'noopener,noreferrer');
+        });
+    }
 }
 
 // Load SOS Button

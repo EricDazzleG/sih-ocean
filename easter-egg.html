@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JARVIS | INCOIS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        .jarvis-text {
+            animation: pulse 2s infinite;
+            text-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-900 to-blue-700 min-h-screen flex items-center justify-center p-4">
+    <div class="text-center">
+        <div class="jarvis-text text-6xl md:text-8xl font-bold text-white mb-6">
+            JARVIS
+        </div>
+        <p class="text-blue-200 text-lg">
+            Just A Rather Very Intelligent System
+        </p>
+        <p class="text-blue-300 mt-8">
+            <a href="index.html" class="text-blue-200 hover:text-white underline">← Back to INCOIS</a>
+        </p>
+    </div>
+</body>
+</html>
