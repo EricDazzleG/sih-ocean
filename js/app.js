@@ -43,14 +43,24 @@ document.addEventListener('DOMContentLoaded', async () => {
 function toggleMobileMenu() {
     const mobileMenu = document.querySelector('.mobile-menu');
     const mobileToggle = document.querySelector('.mobile-nav-toggle');
+    const mobileOverlay = document.querySelector('.mobile-menu-overlay');
     
     if (mobileMenu && mobileToggle) {
-        const isExpanded = mobileToggle.getAttribute('aria-expanded') === 'true';
-        mobileToggle.setAttribute('aria-expanded', !isExpanded);
+        const wasExpanded = mobileToggle.getAttribute('aria-expanded') === 'true';
+        const nowExpanded = !wasExpanded;
+        mobileToggle.setAttribute('aria-expanded', nowExpanded);
         mobileMenu.classList.toggle('hidden');
         
-        // Toggle body scroll
-        document.body.style.overflow = isExpanded ? '' : 'hidden';
+        // Hide the hamburger toggle while menu is open to avoid double X
+        if (nowExpanded) {
+            mobileToggle.classList.add('hidden');
+            if (mobileOverlay) mobileOverlay.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        } else {
+            mobileToggle.classList.remove('hidden');
+            if (mobileOverlay) mobileOverlay.classList.add('hidden');
+            document.body.style.overflow = '';
+        }
     }
 }
 
@@ -58,11 +68,16 @@ function toggleMobileMenu() {
 function closeMobileMenuOnClickOutside(event) {
     const mobileMenu = document.querySelector('.mobile-menu');
     const mobileToggle = document.querySelector('.mobile-nav-toggle');
+    const mobileOverlay = document.querySelector('.mobile-menu-overlay');
     
     if (mobileMenu && !mobileMenu.contains(event.target) && 
         mobileToggle && !mobileToggle.contains(event.target) &&
         !mobileMenu.classList.contains('hidden')) {
-        toggleMobileMenu();
+        mobileMenu.classList.add('hidden');
+        mobileToggle.setAttribute('aria-expanded', 'false');
+        mobileToggle.classList.remove('hidden');
+        if (mobileOverlay) mobileOverlay.classList.add('hidden');
+        document.body.style.overflow = '';
     }
 }
 
@@ -70,12 +85,20 @@ function closeMobileMenuOnClickOutside(event) {
 function closeMobileMenuOnLinkClick() {
     const mobileMenu = document.querySelector('.mobile-menu');
     const mobileLinks = mobileMenu?.querySelectorAll('a[href]');
+    const mobileToggle = document.querySelector('.mobile-nav-toggle');
+    const mobileOverlay = document.querySelector('.mobile-menu-overlay');
     
     if (mobileLinks) {
         mobileLinks.forEach(link => {
             link.addEventListener('click', () => {
                 if (!mobileMenu.classList.contains('hidden')) {
-                    toggleMobileMenu();
+                    mobileMenu.classList.add('hidden');
+                    if (mobileToggle) {
+                        mobileToggle.setAttribute('aria-expanded', 'false');
+                        mobileToggle.classList.remove('hidden');
+                    }
+                    if (mobileOverlay) mobileOverlay.classList.add('hidden');
+                    document.body.style.overflow = '';
                 }
             });
         });
