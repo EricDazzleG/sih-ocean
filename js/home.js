@@ -82,12 +82,21 @@ async function loadReportsFeed() {
                 let tag = 'misc';
                 if (t.includes('flood') || t.includes('cyclone') || t.includes('wind')) tag = 'hazard';
                 else if (t.includes('road') || t.includes('bridge') || t.includes('tree')) tag = 'infrastructure';
-                const statuses = ['pending', 'verified', 'resolved'];
+                const statuses = ['verified', 'pending', 'rejected', 'resolved'];
                 const status = statuses[idx % statuses.length];
                 const createdAt = new Date(Date.now() - idx * 86400000).toISOString();
                 return { id: idx + 1, src, title, location, tag, status, created_at: createdAt };
             });
         }
+
+        // Sort by custom status order then by recency
+        const statusOrder = { verified: 0, pending: 1, rejected: 2, resolved: 3 };
+        cards.sort((a, b) => {
+            const pa = statusOrder[a.status] ?? 99;
+            const pb = statusOrder[b.status] ?? 99;
+            if (pa !== pb) return pa - pb;
+            return new Date(b.created_at) - new Date(a.created_at);
+        });
 
         // Render cards
         let html = '';
