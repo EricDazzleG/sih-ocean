@@ -133,11 +133,8 @@ async function loadHeader() {
                 <div class="mobile-menu hidden fixed inset-y-0 right-0 w-64 bg-white shadow-lg z-50 p-6 transform transition-transform duration-300 ease-in-out">
                     <div class="flex flex-col h-full">
                         <div class="flex justify-between items-center mb-8">
-                            <a href="index.html" class="logo flex items-center">
-                                <img src="./assets/incois-logo.svg" alt="INCOIS Logo" class="h-8">
-                                <span class="ml-2 text-lg font-semibold text-primary">INCOIS</span>
-                            </a>
-                            <button class="mobile-close" aria-label="Close menu">
+                            <span class="text-lg font-semibold text-primary">Menu</span>
+                            <button class="mobile-close" aria-label="Close menu" title="Close">
                                 &times;
                             </button>
                         </div>
