@@ -116,8 +116,8 @@ async function loadHeader() {
             <div class="nav-container">
                 <!-- Logo -->
                 <a href="index.html" class="logo">
-                    <img src="./assets/incois-logo.svg" alt="INCOIS Logo">
-                    <span>INCOIS</span>
+                    <img src="./assets/incois-logo.svg" alt="Sea Gaurdian Logo">
+                    <span>Sea Gaurdian</span>
                 </a>
                 
                 <!-- Desktop Navigation -->
@@ -232,8 +232,8 @@ function loadFooter() {
                 <div class="flex flex-col md:flex-row justify-between">
                     <div class="mb-6 md:mb-0">
                         <div class="flex items-center">
-                            <img src="./assets/incois-logo-white.svg" alt="INCOIS Logo" class="h-10">
-                            <span id="easter-egg" class="ml-3 text-xl font-bold cursor-pointer hover:underline" title="Click me!">INCOIS</span>
+                            <img src="./assets/incois-logo-white.svg" alt="Sea Gaurdian Logo" class="h-10">
+                            <span id="easter-egg" class="ml-3 text-xl font-bold cursor-pointer hover:underline" title="Click me!">Sea Gaurdian</span>
                         </div>
                         <p class="mt-2 text-sm max-w-md">Indian National Centre for Ocean Information Services - Providing ocean information and advisory services to society.</p>
                     </div>
@@ -246,7 +246,7 @@ function loadFooter() {
                 </div>
                 
                 <div class="mt-8 pt-4 border-t border-blue-700">
-                    <p class="text-sm text-center"> 2024 INCOIS. All rights reserved.</p>
+                    <p class="text-sm text-center"> 2024 Sea Gaurdian. All rights reserved.</p>
                 </div>
             </div>
         </footer>
