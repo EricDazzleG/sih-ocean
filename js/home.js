@@ -16,6 +16,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     supabaseClient = getSupabase();
     // Load Reports Feed
     loadReportsFeed();
+
+    // Initialize Chatbot (home page only since this file is loaded only on index.html)
+    initChatbot();
 });
 
 // Load Reports Feed
@@ -245,6 +248,137 @@ function openPreviewModal(id, url) {
 function hidePreviewModal(id) {
     const modal = document.getElementById(id);
     if (modal) modal.classList.add('hidden');
+}
+
+// --- Chatbot (Static Q&A) ---
+function initChatbot() {
+    // Avoid duplicate init
+    if (document.getElementById('chatbot-toggle')) return;
+
+    // Predefined Q&A
+    const qa = [
+        {
+            q: 'How can I report an ocean hazard?',
+            a: 'Go to the Report page from the menu. Enter your location (or use “Detect my location”), select a tag (e.g., flood, high waves), and submit your report.'
+        },
+        {
+            q: 'Can I submit a report without logging in?',
+            a: 'No, you must log in first to submit a report. Guest users can only view the feed and emergency updates.'
+        },
+        {
+            q: 'What kind of issues can I report?',
+            a: 'You can report hazards like high waves, floods, damaged infrastructure, or other coastal issues using the appropriate tags.'
+        },
+        {
+            q: 'Will I get alerts about emergencies?',
+            a: 'Yes, the feed page shows an emergency notification bar. If logged in, alerts are location-specific; if not, you will see all-India alerts.'
+        },
+        {
+            q: 'How does this app help fishermen?',
+            a: 'By reporting hazards quickly, citizens help create a crowdsourced map of ocean risks. Fishermen and coastal communities can check real-time warnings before going out to sea.'
+        }
+    ];
+
+    // Toggle Button
+    const btn = document.createElement('button');
+    btn.id = 'chatbot-toggle';
+    btn.type = 'button';
+    btn.className = 'fixed z-40 bottom-24 right-5 w-12 h-12 rounded-full bg-primary text-white shadow-lg flex items-center justify-center hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-primary';
+    btn.title = 'Chat with assistant';
+    btn.innerHTML = '<span class="text-xl" aria-hidden="true">💬</span><span class="sr-only">Open chat</span>';
+
+    // Panel
+    const panel = document.createElement('div');
+    panel.id = 'chatbot-panel';
+    panel.className = 'fixed z-40 bottom-24 right-5 w-80 max-w-[90vw] bg-white rounded-lg shadow-xl border border-gray-200 hidden';
+    panel.innerHTML = `
+      <div class="bg-primary text-white px-4 py-2 rounded-t-lg flex items-center justify-between">
+        <h3 class="text-sm font-semibold">INCOIS Assistant</h3>
+        <button type="button" id="chatbot-close" class="text-white/90 hover:text-white text-lg leading-none">&times;</button>
+      </div>
+      <div id="chatbot-body" class="max-h-64 overflow-y-auto p-3 space-y-3 bg-white">
+        <!-- Messages will appear here -->
+      </div>
+      <div id="chatbot-suggestions" class="p-3 pt-0 flex flex-wrap gap-2">
+        <!-- Suggestion buttons here -->
+      </div>
+      <div class="border-t p-2 flex items-center gap-2">
+        <input id="chatbot-input" type="text" placeholder="Type a message..." class="flex-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary" />
+        <button id="chatbot-send" class="px-3 py-2 bg-gold text-white rounded-md hover:bg-opacity-90">Send</button>
+      </div>
+    `;
+
+    document.body.appendChild(btn);
+    document.body.appendChild(panel);
+
+    // Populate suggestions
+    const sugg = panel.querySelector('#chatbot-suggestions');
+    qa.forEach((item, idx) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'text-sm px-3 py-1 rounded-full bg-gold text-white hover:bg-opacity-90';
+        b.textContent = item.q;
+        b.addEventListener('click', () => handleQA(item.q, item.a));
+        sugg.appendChild(b);
+    });
+
+    // Wire events
+    const body = panel.querySelector('#chatbot-body');
+    const input = panel.querySelector('#chatbot-input');
+    const send = panel.querySelector('#chatbot-send');
+    const close = panel.querySelector('#chatbot-close');
+
+    btn.addEventListener('click', () => {
+        panel.classList.toggle('hidden');
+        if (!panel.classList.contains('hidden')) {
+            // On open, if empty, show a greeting and suggestions
+            if (!body.dataset.inited) {
+                addBotMessage('Hi! Choose a question below or type your own.');
+                body.dataset.inited = '1';
+            }
+            setTimeout(() => input.focus(), 50);
+        }
+    });
+    close.addEventListener('click', () => panel.classList.add('hidden'));
+
+    send.addEventListener('click', () => {
+        const text = (input.value || '').trim();
+        if (!text) return;
+        addUserMessage(text);
+        input.value = '';
+        // Match to predefined Q&A
+        const found = qa.find(item => item.q.toLowerCase() === text.toLowerCase());
+        if (found) addBotMessage(found.a);
+        else addBotMessage('Sorry, I can currently answer only the predefined questions. Please pick one from below.');
+        body.scrollTop = body.scrollHeight;
+    });
+
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            send.click();
+        }
+    });
+
+    function handleQA(q, a) {
+        addUserMessage(q);
+        addBotMessage(a);
+        body.scrollTop = body.scrollHeight;
+    }
+
+    function addUserMessage(text) {
+        const el = document.createElement('div');
+        el.className = 'flex justify-end';
+        el.innerHTML = `<div class="max-w-[80%] bg-blue-50 text-blue-900 text-sm px-3 py-2 rounded-lg">${escapeHtml(text)}</div>`;
+        body.appendChild(el);
+    }
+
+    function addBotMessage(text) {
+        const el = document.createElement('div');
+        el.className = 'flex justify-start';
+        el.innerHTML = `<div class="max-w-[80%] bg-gray-100 text-gray-800 text-sm px-3 py-2 rounded-lg">${escapeHtml(text)}</div>`;
+        body.appendChild(el);
+    }
 }
 
 // Helpers
